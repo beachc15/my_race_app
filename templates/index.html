@@ -118,7 +118,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-2 d-flex flex-column justify-content-center align-items-center"><small class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</small><div id="live-total" class="h4 fw-bolder mb-0">0</div></div>
+                        
+                        <div class="col-2 d-flex flex-column justify-content-center align-items-center">
+                            <small class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</small>
+                            <div id="live-total" class="h4 fw-bolder mb-0">0</div>
+                            <small id="source-label" class="text-muted fw-bold" style="font-size: 0.6rem; display:none;">(Last Run)</small>
+                        </div>
+                        
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">RF</label>
                             <div class="d-flex flex-column">
@@ -238,6 +244,7 @@
                         <div class="col-4"><input type="number" id="revCross" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="C%"></div>
                     </div>
                     <button type="button" class="btn btn-dark btn-sm w-100 mb-3" onclick="calcReverse()">Calculate Target</button>
+                    <div id="revError" class="alert alert-danger d-none mt-2 small p-2 text-center"></div>
                     <div id="revResults" class="d-none">
                         <div class="row g-2">
                             <div class="col-6"><div class="rev-result-box">LF <span class="rev-val" id="outLF"></span><span class="rev-delta" id="diffLF"></span></div></div>
@@ -290,30 +297,74 @@
     // 1. UI Logic
     function switchCar() { const c=document.getElementById('carInput').value.trim(); if(c) window.location.href=`/?car_num=${encodeURIComponent(c)}`; }
     document.getElementById('carInput').addEventListener('input', function(){ document.getElementById('formCarNum').value=this.value; });
-    function clearTurns() { document.querySelectorAll('.turn-input').forEach(e => e.value=''); }
+    function clearTurns() { document.querySelectorAll('.turn-input').forEach(e => e.selectedIndex = 0); }
     function toggleTools() { const t=document.getElementById('toolsCol'), i=document.getElementById('inputCol'); if(t.classList.contains('d-none')) { t.classList.remove('d-none'); i.classList.remove('col-lg-12'); i.classList.add('col-lg-8'); } else { t.classList.add('d-none'); i.classList.remove('col-lg-8'); i.classList.add('col-lg-12'); } }
 
     // 2. Data & CoG
     const wIds = ['lf','rf','lr','rr'];
+    // Inject Last Run data safely for JS
+    const lastRun = {{ last_run|tojson|safe if last_run else 'null' }};
+    
     let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
     const baseL = parseFloat("{{ baseline_run.left_pct if baseline_run else 0 }}");
     const baseR = parseFloat("{{ baseline_run.rear_pct if baseline_run else 0 }}");
 
     function updateLive() {
-        let t=0; wIds.forEach(k => { const v=parseFloat(document.getElementById(k).value)||0; curW[k]=v; t+=v; });
-        curW.t = t;
-        document.getElementById('live-total').innerText = t.toFixed(1);
-        let cP=0, lP=0, rP=0;
-        if(t>0) {
-            cP = ((curW.rf+curW.lr)/t)*100; lP = ((curW.lf+curW.lr)/t)*100; rP = ((curW.lr+curW.rr)/t)*100;
+        // Read Inputs
+        let inputTotal = 0;
+        let inputW = {lf:0, rf:0, lr:0, rr:0, t:0};
+        wIds.forEach(k => { 
+            const v = parseFloat(document.getElementById(k).value) || 0; 
+            inputW[k] = v; 
+            inputTotal += v; 
+        });
+
+        const totalDisplay = document.getElementById('live-total');
+        const sourceLabel = document.getElementById('source-label');
+
+        // Logic: Use inputs if valid, otherwise fallback to lastRun
+        if (inputTotal > 0) {
+            curW = {...inputW, t: inputTotal};
+            totalDisplay.innerText = inputTotal.toFixed(1);
+            totalDisplay.classList.remove('text-muted');
+            sourceLabel.style.display = 'none';
+        } else if (lastRun) {
+            curW = {
+                lf: parseFloat(lastRun.lf), 
+                rf: parseFloat(lastRun.rf), 
+                lr: parseFloat(lastRun.lr), 
+                rr: parseFloat(lastRun.rr),
+                t: parseFloat(lastRun.total)
+            };
+            // Update the display to show ghost values (Visual Feedback)
+            totalDisplay.innerText = curW.t.toFixed(1);
+            totalDisplay.classList.add('text-muted');
+            sourceLabel.style.display = 'block';
+        } else {
+            curW = {lf:0, rf:0, lr:0, rr:0, t:0};
+            totalDisplay.innerText = "0";
+            sourceLabel.style.display = 'none';
+        }
+
+        // Always update metrics based on curW
+        if(curW.t > 0) {
+            const cP = ((curW.rf+curW.lr)/curW.t)*100; 
+            const lP = ((curW.lf+curW.lr)/curW.t)*100; 
+            const rP = ((curW.lr+curW.rr)/curW.t)*100;
             document.getElementById('live-cross').innerText = cP.toFixed(2)+'%';
             document.getElementById('live-left').innerText = lP.toFixed(1)+'%';
             document.getElementById('live-rear').innerText = rP.toFixed(1)+'%';
             updateCoG(lP, rP);
+        } else {
+            document.getElementById('live-cross').innerText = "0.00%";
         }
+
         calcCrossPred(); calcCornerPred();
         if(document.getElementById('fuelTargetInput').value) calcFuel();
     }
+    
+    // Trigger update on load to populate from Last Run if exists
+    window.addEventListener('load', updateLive);
     wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
 
     function updateCoG(lP, rP) {
@@ -326,8 +377,28 @@
 
     // 3. Calculators
     function calcReverse() {
-        const L=parseFloat(document.getElementById('revLeft').value)/100, R=parseFloat(document.getElementById('revRear').value)/100, C=parseFloat(document.getElementById('revCross').value)/100, T=curW.t;
-        if(!T||!L||!R||!C) return;
+        const errEl = document.getElementById('revError');
+        const resEl = document.getElementById('revResults');
+        errEl.classList.add('d-none');
+        resEl.classList.add('d-none');
+
+        const L=parseFloat(document.getElementById('revLeft').value)/100;
+        const R=parseFloat(document.getElementById('revRear').value)/100;
+        const C=parseFloat(document.getElementById('revCross').value)/100;
+        const T=curW.t;
+
+        if (!T || T === 0) {
+            errEl.innerText = "Error: No weight data available (Inputs or Last Run).";
+            errEl.classList.remove('d-none');
+            return;
+        }
+
+        if (isNaN(L) || isNaN(R) || isNaN(C)) {
+            errEl.innerText = "Error: Please enter values for Left, Rear, and Cross percentages.";
+            errEl.classList.remove('d-none');
+            return;
+        }
+
         const lM=T*L, rM=T*R, cM=T*C, lr=(lM+rM+cM-T)/2, rr=rM-lr, lf=lM-lr, rf=T-lf-lr-rr;
         const tgt = {lf,rf,lr,rr};
         ['lf','rf','lr','rr'].forEach(k => {
@@ -337,7 +408,8 @@
             el.innerText=d>0?` (+${d.toFixed(0)})`:` (${d.toFixed(0)})`;
             el.className=d>0?"rev-delta text-danger":"rev-delta text-primary";
         });
-        document.getElementById('revResults').classList.remove('d-none');
+        
+        resEl.classList.remove('d-none');
     }
 
     const sensRate = parseFloat("{{ last_run.wt_per_turn if last_run and last_run.wt_per_turn else 0 }}") || 0;
