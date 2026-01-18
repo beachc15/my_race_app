@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaceEngineer | Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root { --bg-body: #f8fafc; --primary: #3b82f6; --dark: #0f172a; --card-border: #cbd5e1; }
+        body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; color: var(--dark); }
+        .app-card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--card-border); padding: 20px; margin-bottom: 24px; }
+        
+        /* Input Styling */
+        .weight-input { font-size: 1.6rem; font-weight: 800; text-align: center; border: 1px solid #94a3b8; border-radius: 8px 8px 0 0; background: #f8fafc; height: 60px; z-index: 2; }
+        .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.3); z-index: 3; }
+        
+        .turn-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-right: none; border-radius: 0 0 0 8px; text-align: center; font-size: 0.8rem; background: #fffbeb; color: #b45309; font-weight: 600; padding: 4px; }
+        .psi-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-radius: 0 0 8px 0; text-align: center; font-size: 0.8rem; background: #eff6ff; color: #1e40af; font-weight: 600; padding: 4px; }
+
+        /* CoG Plot */
+        .cog-plot { position: relative; height: 180px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        .cog-point { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.5s ease; z-index: 2; }
+        .cog-current { background: #ef4444; }
+        .cog-baseline { background: #22c55e; opacity: 0.6; z-index: 1; }
+        
+        /* Axis Labels */
+        .axis-label { position: absolute; font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
+        .axis-l { top: 50%; left: 5px; transform: translateY(-50%); }
+        .axis-r { top: 50%; right: 5px; transform: translateY(-50%); }
+        .axis-t { top: 5px; left: 50%; transform: translateX(-50%); }
+        .axis-b { bottom: 5px; left: 50%; transform: translateX(-50%); }
+
+        /* Misc */
+        .metric-badge { background: #f1f5f9; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e2e8f0; }
+        .clickable-run { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
+        .baseline-row { background-color: #f0fdf4 !important; }
+        .diff-pos { color: #dc2626; font-weight: 700; }
+        .diff-neg { color: #2563eb; font-weight: 700; }
+        .rev-result-box { font-size: 0.85rem; background: #f1f5f9; padding: 8px; border-radius: 6px; margin-bottom: 4px; }
+        .rev-delta { font-size: 0.8rem; font-weight: 700; }
+        #compareBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 999; border-radius: 50px; padding: 12px 28px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
+        .nav-tabs .nav-link { color: #64748b; font-size: 0.8rem; }
+        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
+        </div>
+        
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="toggleTools()">
+                <i class="fa-solid fa-toolbox me-1"></i> Tools
+            </button>
+            <div class="input-group shadow-sm w-auto">
+                <span class="input-group-text bg-white fw-bold text-muted border-end-0">#</span>
+                <input type="text" id="carInput" class="form-control text-center fw-bold border-start-0" value="{{ selected_car|default('1') }}" style="width: 60px;">
+                <button class="btn btn-dark" onclick="switchCar()">LOAD</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="app-card h-100 mb-0 py-3 position-relative">
+                <div class="d-flex justify-content-between mb-2">
+                    <small class="fw-bold text-muted">CENTER OF GRAVITY (40% - 60%)</small>
+                    <div class="small"><span class="text-success fw-bold">● Base</span> <span class="text-danger fw-bold ms-2">● Cur</span></div>
+                </div>
+                <div class="cog-plot" id="cogContainer">
+                    <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#cbd5e1;"></div>
+                    <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#cbd5e1;"></div>
+                    <span class="axis-label axis-l">L:60%</span><span class="axis-label axis-r">L:40%</span>
+                    <span class="axis-label axis-t">R:60%</span><span class="axis-label axis-b">R:40%</span>
+                    <div id="cogBase" class="cog-point cog-baseline" style="display:none;"></div>
+                    <div id="cogCur" class="cog-point cog-current" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="row h-100 g-3">
+                <div class="col-6">
+                    <div class="app-card h-100 mb-0 py-3 d-flex flex-column justify-content-center text-center border-start border-4 border-success">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Baseline Cross</small>
+                        <div class="h2 fw-bold text-success mb-0">{{ baseline_run.cross_pct if baseline_run else '--' }}%</div>
+                        {% if baseline_run %}<small class="text-muted">#{{ baseline_run.scale_num }}</small>{% endif %}
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="app-card h-100 mb-0 py-3 d-flex flex-column justify-content-center text-center border-start border-4 border-primary">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Current Cross</small>
+                        <div class="h2 fw-bold text-primary mb-0">{{ last_run.cross_pct if last_run else '--' }}%</div>
+                        {% if last_run %}<small class="text-muted">#{{ last_run.scale_num }}</small>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form action="/submit" method="POST">
+        <input type="hidden" name="car_num" id="formCarNum" value="{{ selected_car }}">
+        <input type="hidden" name="scale_num" value="{{ next_num }}">
+
+        <div class="row g-4">
+            <div class="col-lg-8" id="inputCol">
+                <div class="app-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0">Scale Drop #{{ next_num }}</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_baseline" id="baseCheck">
+                            <label class="form-check-label small fw-bold text-success" for="baseCheck">SET BASELINE</label>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-5">
+                            <label class="small text-muted fw-bold d-block text-center mb-1">LF</label>
+                            <div class="d-flex flex-column">
+                                <input type="number" step="0.1" name="lf" id="lf" class="form-control weight-input" placeholder="Lbs" required autofocus>
+                                <div class="d-flex"><input type="number" step="0.125" name="t_lf" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_lf" class="psi-input" placeholder="Psi"></div>
+                            </div>
+                        </div>
+                        <div class="col-2 d-flex flex-column justify-content-center align-items-center"><small class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</small><div id="live-total" class="h4 fw-bolder mb-0">0</div></div>
+                        <div class="col-5">
+                            <label class="small text-muted fw-bold d-block text-center mb-1">RF</label>
+                            <div class="d-flex flex-column">
+                                <input type="number" step="0.1" name="rf" id="rf" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex"><input type="number" step="0.125" name="t_rf" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_rf" class="psi-input" placeholder="Psi"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Cross</small><div id="live-cross" class="h5 fw-bold text-primary mb-0">0.00%</div></div></div>
+                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Left</small><div id="live-left" class="h5 fw-bold mb-0">0.0%</div></div></div>
+                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Rear</small><div id="live-rear" class="h5 fw-bold mb-0">0.0%</div></div></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-5">
+                            <label class="small text-muted fw-bold d-block text-center mb-1">LR</label>
+                            <div class="d-flex flex-column">
+                                <input type="number" step="0.1" name="lr" id="lr" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex"><input type="number" step="0.125" name="t_lr" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_lr" class="psi-input" placeholder="Psi"></div>
+                            </div>
+                        </div>
+                        <div class="col-2"></div>
+                        <div class="col-5">
+                            <label class="small text-muted fw-bold d-block text-center mb-1">RR</label>
+                            <div class="d-flex flex-column">
+                                <input type="number" step="0.1" name="rr" id="rr" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex"><input type="number" step="0.125" name="t_rr" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_rr" class="psi-input" placeholder="Psi"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <h6 class="fw-bold mb-3">Session Details</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="small text-muted fw-bold">FUEL ADDED</label>
+                            <div class="input-group">
+                                <input type="number" step="0.1" name="fuel_input" class="form-control" placeholder="0.0">
+                                <select name="fuel_unit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted fw-bold">SWAY BAR</label>
+                            <select name="sway_bar" class="form-select"><option value="Disconnected">Disconnected</option><option value="Neutral">Neutral</option><option value="Preloaded">Preloaded</option></select>
+                        </div>
+                    </div>
+                    <label class="small text-muted fw-bold">NOTES</label>
+                    <textarea name="adjustment_notes" class="form-control mb-3" rows="2" placeholder="Describe changes..."></textarea>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none" onclick="clearTurns()">Reset Turns</button>
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow">SAVE RUN</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4" id="toolsCol">
+                
+                <div class="app-card border-top border-4 border-primary">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-wrench text-primary me-2"></i>Turn Predictor</h6>
+                    {% if last_run and (last_run.wt_per_turn|float != 0) %}
+                    <ul class="nav nav-tabs nav-fill mb-3" id="predTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-cross" type="button">Cross %</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-corner" type="button">Corner</button></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="pane-cross">
+                            <input type="number" id="targetCross" step="0.01" class="form-control mb-2" placeholder="Target %">
+                            <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Diagonals</small><div id="recCross" class="fw-bold text-dark mt-1">--</div></div>
+                        </div>
+                        <div class="tab-pane fade" id="pane-corner">
+                            <select id="targetCornerSelect" class="form-select mb-2"><option value="lf">LF</option><option value="rf">RF</option><option value="lr">LR</option><option value="rr">RR</option></select>
+                            <input type="number" id="targetWeight" step="1" class="form-control mb-2" placeholder="Target Lbs">
+                            <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Spring</small><div id="recCorner" class="fw-bold text-dark mt-1">--</div></div>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p class="small text-muted fst-italic">Record weights + turns to enable.</p>
+                    {% endif %}
+                </div>
+
+                <div class="app-card border-top border-4 border-danger">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-gas-pump text-danger me-2"></i>Fuel Predictor</h6>
+                    {% if last_run and (last_run.fuel_sensitivity|float != 0) %}
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="number" id="fuelTargetInput" class="form-control" placeholder="Add Fuel...">
+                            <select id="fuelTargetUnit" class="form-select bg-light" style="max-width: 70px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                        </div>
+                        <div class="d-flex justify-content-between px-2"><small class="fw-bold text-muted">REAR %:</small><span id="fuelRec" class="fw-bold">--</span></div>
+                    {% else %}
+                        <p class="small text-muted fst-italic">Record fuel add (no turns) to learn.</p>
+                    {% endif %}
+                </div>
+
+                <div class="app-card border-top border-4 border-dark">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
+                    <div class="row g-2 mb-2">
+                        <div class="col-4"><input type="number" id="revLeft" class="form-control form-control-sm text-center" placeholder="L%"></div>
+                        <div class="col-4"><input type="number" id="revRear" class="form-control form-control-sm text-center" placeholder="R%"></div>
+                        <div class="col-4"><input type="number" id="revCross" class="form-control form-control-sm text-center" placeholder="C%"></div>
+                    </div>
+                    <button type="button" class="btn btn-dark btn-sm w-100 mb-3" onclick="calcReverse()">Calculate Target</button>
+                    <div id="revResults" class="d-none">
+                        <div class="row g-2">
+                            <div class="col-6"><div class="rev-result-box">LF <span class="rev-val" id="outLF"></span><span class="rev-delta" id="diffLF"></span></div></div>
+                            <div class="col-6"><div class="rev-result-box">RF <span class="rev-val" id="outRF"></span><span class="rev-delta" id="diffRF"></span></div></div>
+                            <div class="col-6"><div class="rev-result-box">LR <span class="rev-val" id="outLR"></span><span class="rev-delta" id="diffLR"></span></div></div>
+                            <div class="col-6"><div class="rev-result-box">RR <span class="rev-val" id="outRR"></span><span class="rev-delta" id="diffRR"></span></div></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+
+    <div class="app-card p-0 overflow-hidden">
+        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-uppercase text-muted small">History Log</h6>
+            <span class="badge bg-white text-dark border">{{ history|length }} Runs</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-history">
+                <thead class="bg-light">
+                    <tr><th class="ps-4">Sel</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for run in history|reverse %}
+                    <tr class="{{ 'baseline-row' if run.is_baseline == 'Yes' }}">
+                        <td class="ps-4"><input type="checkbox" class="form-check-input compare-check" data-run='{{ run|tojson|safe }}' onchange="toggleCompare()"></td>
+                        <td><span class="clickable-run" data-run='{{ run|tojson|safe }}' onclick="showPopUp(this)">#{{ run.scale_num }}</span>{% if run.is_baseline == 'Yes' %}<i class="fa-solid fa-star text-success ms-1" style="font-size: 0.6rem;"></i>{% endif %}</td>
+                        <td class="small text-muted">{{ run.date }}</td>
+                        <td>{{ run.lf }} <span class="text-muted small">({{ run.t_lf }})</span></td>
+                        <td>{{ run.rf }} <span class="text-muted small">({{ run.t_rf }})</span></td>
+                        <td>{{ run.lr }} <span class="text-muted small">({{ run.t_lr }})</span></td>
+                        <td>{{ run.rr }} <span class="text-muted small">({{ run.t_rr }})</span></td>
+                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ run.cross_pct }}%</span></td>
+                        <td class="small fw-bold">{{ run.fuel_lbs }}</td>
+                        <td class="small text-muted">{{ run.sway_bar }}</td>
+                        <td class="text-end pe-4"><a href="/delete/{{ selected_car }}/{{ run.scale_num }}" class="text-muted hover-danger" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<button id="compareBtn" class="btn btn-dark" onclick="compareRuns()"><i class="fa-solid fa-scale-balanced me-2"></i>Compare (2)</button>
+
+<div class="modal fade" id="mainModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold" id="modalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4" id="modalBody"></div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 1. UI Helpers
+    function switchCar() { const c=document.getElementById('carInput').value.trim(); if(c) window.location.href=`/?car_num=${encodeURIComponent(c)}`; }
+    document.getElementById('carInput').addEventListener('input', function(){ document.getElementById('formCarNum').value=this.value; });
+    function clearTurns() { document.querySelectorAll('.turn-field').forEach(e => e.value=''); }
+    function toggleTools() { const t=document.getElementById('toolsCol'), i=document.getElementById('inputCol'); if(t.classList.contains('d-none')) { t.classList.remove('d-none'); i.classList.remove('col-lg-12'); i.classList.add('col-lg-8'); } else { t.classList.add('d-none'); i.classList.remove('col-lg-8'); i.classList.add('col-lg-12'); } }
+
+    // 2. State & CoG
+    const wIds = ['lf','rf','lr','rr'];
+    let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
+    const baseL = parseFloat("{{ baseline_run.left_pct if baseline_run else 0 }}");
+    const baseR = parseFloat("{{ baseline_run.rear_pct if baseline_run else 0 }}");
+
+    function updateLive() {
+        let t=0; wIds.forEach(k => { const v=parseFloat(document.getElementById(k).value)||0; curW[k]=v; t+=v; });
+        curW.t = t;
+        document.getElementById('live-total').innerText = t.toFixed(1);
+        let cP=0, lP=0, rP=0;
+        if(t>0) {
+            cP = ((curW.rf+curW.lr)/t)*100; lP = ((curW.lf+curW.lr)/t)*100; rP = ((curW.lr+curW.rr)/t)*100;
+            document.getElementById('live-cross').innerText = cP.toFixed(2)+'%';
+            document.getElementById('live-left').innerText = lP.toFixed(1)+'%';
+            document.getElementById('live-rear').innerText = rP.toFixed(1)+'%';
+            updateCoG(lP, rP);
+        }
+        calcCrossPred(); calcCornerPred();
+    }
+    wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
+
+    function updateCoG(lP, rP) {
+        function map(v) { return Math.max(0, Math.min(100, (v - 40) * 5)); }
+        const dot = document.getElementById('cogCur');
+        dot.style.display = 'block';
+        dot.style.left = map(lP) + '%'; dot.style.top = map(rP) + '%';
+        if(baseL > 0) { const b = document.getElementById('cogBase'); b.style.display = 'block'; b.style.left = map(baseL) + '%'; b.style.top = map(baseR) + '%'; }
+    }
+
+    // 3. Calculators
+    function calcReverse() {
+        const L=parseFloat(document.getElementById('revLeft').value)/100, R=parseFloat(document.getElementById('revRear').value)/100, C=parseFloat(document.getElementById('revCross').value)/100, T=curW.t;
+        if(!T||!L||!R||!C) return;
+        const lM=T*L, rM=T*R, cM=T*C, lr=(lM+rM+cM-T)/2, rr=rM-lr, lf=lM-lr, rf=T-lf-lr-rr;
+        const tgt = {lf,rf,lr,rr};
+        ['lf','rf','lr','rr'].forEach(k => {
+            const v=tgt[k], d=v-curW[k];
+            document.getElementById('out'+k.toUpperCase()).innerText=v.toFixed(0);
+            const el=document.getElementById('diff'+k.toUpperCase());
+            el.innerText=d>0?` (+${d.toFixed(0)})`:` (${d.toFixed(0)})`;
+            el.className=d>0?"rev-delta text-danger":"rev-delta text-primary";
+        });
+        document.getElementById('revResults').classList.remove('d-none');
+    }
+
+    const sensRate = parseFloat("{{ last_run.wt_per_turn if last_run and last_run.wt_per_turn else 0 }}") || 0;
+    function calcCrossPred() {
+        const target = parseFloat(document.getElementById('targetCross').value);
+        if(!target || sensRate === 0 || curW.t===0) { document.getElementById('recCross').innerText = "--"; return; }
+        const cur = ((curW.rf + curW.lr) / curW.t) * 100;
+        const t = (target - cur) / sensRate;
+        document.getElementById('recCross').innerText = `${t>0?"Tighten":"Loosen"} RF/LR ${Math.abs(t).toFixed(2)} turns`;
+    }
+    const tc = document.getElementById('targetCross'); if(tc) tc.addEventListener('input', calcCrossPred);
+
+    function calcCornerPred() {
+        const c = document.getElementById('targetCornerSelect').value, target = parseFloat(document.getElementById('targetWeight').value);
+        if(!target || curW.t===0 || sensRate===0) { document.getElementById('recCorner').innerText = "--"; return; }
+        const lbsPerTurn = curW.t * (Math.abs(sensRate)/100);
+        const t = (target - curW[c]) / lbsPerTurn;
+        document.getElementById('recCorner').innerText = `${t>0?"Tighten":"Loosen"} ${c.toUpperCase()} ${Math.abs(t).toFixed(2)} turns`;
+    }
+    const tw=document.getElementById('targetWeight'), ts=document.getElementById('targetCornerSelect'); if(tw){ tw.addEventListener('input', calcCornerPred); ts.addEventListener('change', calcCornerPred); }
+
+    const fuelIn = document.getElementById('fuelTargetInput'), fuelUnit = document.getElementById('fuelTargetUnit');
+    if(fuelIn) {
+        const fRate = parseFloat("{{ last_run.fuel_sensitivity if last_run and last_run.fuel_sensitivity else 0 }}") || 0;
+        function calcFuel() {
+            let val = parseFloat(fuelIn.value) || 0;
+            if(fuelUnit.value === 'gal') val = val * 6.2;
+            const shift = (val * fRate).toFixed(2);
+            document.getElementById('fuelRec').innerText = (shift>0?"+":"") + shift + "%";
+        }
+        fuelIn.addEventListener('input', calcFuel); fuelUnit.addEventListener('change', calcFuel);
+    }
+
+    // 4. Modal Helpers
+    function toggleCompare() { document.getElementById('compareBtn').style.display = (document.querySelectorAll('.compare-check:checked').length===2)?'block':'none'; }
+    function showPopUp(el) {
+        const r=JSON.parse(el.getAttribute('data-run'));
+        document.getElementById('modalTitle').innerText=`Run #${r.scale_num}`;
+        document.getElementById('modalBody').innerHTML=`
+        <div class="row text-center mb-3"><div class="col-6"><div class="p-2 border bg-light rounded">LF: <b>${r.lf}</b><br><small class="text-warning">${r.t_lf}t</small> | <small class="text-primary">${r.p_lf}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RF: <b>${r.rf}</b><br><small class="text-warning">${r.t_rf}t</small> | <small class="text-primary">${r.p_rf}psi</small></div></div></div>
+        <div class="text-center fw-bold py-1">TOTAL: ${r.total}</div>
+        <div class="row text-center mb-4"><div class="col-6"><div class="p-2 border bg-light rounded">LR: <b>${r.lr}</b><br><small class="text-warning">${r.t_lr}t</small> | <small class="text-primary">${r.p_lr}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RR: <b>${r.rr}</b><br><small class="text-warning">${r.t_rr}t</small> | <small class="text-primary">${r.p_rr}psi</small></div></div></div>
+        <ul class="list-group"><li class="list-group-item d-flex justify-content-between"><span>Cross</span><b>${r.cross_pct}%</b></li><li class="list-group-item d-flex justify-content-between"><span>Fuel</span><b>${r.fuel_lbs} lbs</b></li><li class="list-group-item d-flex justify-content-between"><span>Bar</span><b>${r.sway_bar}</b></li></ul>
+        <div class="p-3 bg-light rounded mt-3 small">${r.adjustment_notes||'No notes'}</div>`;
+        new bootstrap.Modal(document.getElementById('mainModal')).show();
+    }
+    function compareRuns() {
+        const s = Array.from(document.querySelectorAll('.compare-check:checked')).map(c=>JSON.parse(c.getAttribute('data-run')));
+        s.sort((a,b)=>parseInt(a.scale_num)-parseInt(b.scale_num));
+        const r1=s[0], r2=s[1];
+        document.getElementById('modalTitle').innerText=`Compare #${r1.scale_num} vs #${r2.scale_num}`;
+        let h=`<div class="row text-center fw-bold border-bottom pb-2 mb-2"><div class="col-4">#${r1.scale_num}</div><div class="col-4">Metric</div><div class="col-4">#${r2.scale_num}</div></div>`;
+        [['lf','LF'],['rf','RF'],['lr','LR'],['rr','RR'],['total','Total'],['cross_pct','Cross%'],['fuel_lbs','Fuel(lbs)']].forEach(([k,l])=>{
+            let v1=parseFloat(r1[k])||0, v2=parseFloat(r2[k])||0, d=(v2-v1).toFixed(2);
+            let c=d>0?'diff-pos':(d<0?'diff-neg':'text-muted');
+            h+=`<div class="row text-center py-2 border-bottom"><div class="col-4">${v1}</div><div class="col-4"><b>${l}</b><br><small class="${c}">${d>0?'+':''}${d}</small></div><div class="col-4">${v2}</div></div>`;
+        });
+        document.getElementById('modalBody').innerHTML=h;
+        new bootstrap.Modal(document.getElementById('mainModal')).show();
+    }
+</script>
+</body>
+</html>
