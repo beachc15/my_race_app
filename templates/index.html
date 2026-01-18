@@ -13,7 +13,7 @@
         .app-card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--card-border); padding: 20px; margin-bottom: 24px; }
         .weight-input { font-size: 1.6rem; font-weight: 800; text-align: center; border: 1px solid #94a3b8; border-radius: 8px 8px 0 0; background: #f8fafc; height: 60px; z-index: 2; }
         .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.3); z-index: 3; }
-        .turn-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-right: none; border-radius: 0 0 0 8px; text-align: center; font-size: 0.8rem; background: #fffbeb; color: #b45309; font-weight: 600; padding: 4px; }
+        .turn-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-right: none; border-radius: 0 0 0 8px; text-align: center; font-size: 0.8rem; background: #fffbeb; color: #b45309; font-weight: 600; padding: 4px; cursor: pointer; appearance: none; -webkit-appearance: none; }
         .psi-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-radius: 0 0 8px 0; text-align: center; font-size: 0.8rem; background: #eff6ff; color: #1e40af; font-weight: 600; padding: 4px; }
         .metric-badge { background: #f1f5f9; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e2e8f0; }
         .clickable-run { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
@@ -26,8 +26,6 @@
         .rev-delta { font-size: 0.8rem; font-weight: 700; }
         .pred-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 4px; font-size: 0.85rem; font-weight: 600; color: #be123c; }
         #compareBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 999; border-radius: 50px; padding: 12px 28px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
-        .nav-tabs .nav-link { color: #64748b; font-size: 0.8rem; }
-        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
     </style>
 </head>
 <body>
@@ -101,20 +99,34 @@
                             <label class="form-check-label small fw-bold text-success" for="baseCheck">SET BASELINE</label>
                         </div>
                     </div>
+                    
+                    {% macro turn_options() %}
+                        <option value="" selected disabled>Turns</option>
+                        {% for i in range(-16, 17) %}
+                            <option value="{{ i/4 }}">{{ i/4 }}</option>
+                        {% endfor %}
+                    {% endmacro %}
+
                     <div class="row g-3 mb-3">
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">LF</label>
                             <div class="d-flex flex-column">
-                                <input type="number" step="0.1" name="lf" id="lf" class="form-control weight-input" placeholder="Lbs" required autofocus>
-                                <div class="d-flex"><input type="number" step="0.125" name="t_lf" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_lf" class="psi-input" placeholder="Psi"></div>
+                                <input type="number" step="0.1" inputmode="decimal" name="lf" id="lf" class="form-control weight-input" placeholder="Lbs" required autofocus>
+                                <div class="d-flex">
+                                    <select name="t_lf" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_lf" class="psi-input" placeholder="Psi">
+                                </div>
                             </div>
                         </div>
                         <div class="col-2 d-flex flex-column justify-content-center align-items-center"><small class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</small><div id="live-total" class="h4 fw-bolder mb-0">0</div></div>
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">RF</label>
                             <div class="d-flex flex-column">
-                                <input type="number" step="0.1" name="rf" id="rf" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex"><input type="number" step="0.125" name="t_rf" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_rf" class="psi-input" placeholder="Psi"></div>
+                                <input type="number" step="0.1" inputmode="decimal" name="rf" id="rf" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex">
+                                    <select name="t_rf" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_rf" class="psi-input" placeholder="Psi">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -127,16 +139,22 @@
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">LR</label>
                             <div class="d-flex flex-column">
-                                <input type="number" step="0.1" name="lr" id="lr" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex"><input type="number" step="0.125" name="t_lr" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_lr" class="psi-input" placeholder="Psi"></div>
+                                <input type="number" step="0.1" inputmode="decimal" name="lr" id="lr" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex">
+                                    <select name="t_lr" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_lr" class="psi-input" placeholder="Psi">
+                                </div>
                             </div>
                         </div>
                         <div class="col-2"></div>
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">RR</label>
                             <div class="d-flex flex-column">
-                                <input type="number" step="0.1" name="rr" id="rr" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex"><input type="number" step="0.125" name="t_rr" class="turn-input" placeholder="Turns"><input type="number" step="0.1" name="p_rr" class="psi-input" placeholder="Psi"></div>
+                                <input type="number" step="0.1" inputmode="decimal" name="rr" id="rr" class="form-control weight-input" placeholder="Lbs" required>
+                                <div class="d-flex">
+                                    <select name="t_rr" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_rr" class="psi-input" placeholder="Psi">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,7 +165,7 @@
                         <div class="col-md-6">
                             <label class="small text-muted fw-bold">FUEL ADDED</label>
                             <div class="input-group">
-                                <input type="number" step="0.1" name="fuel_input" class="form-control" placeholder="0.0">
+                                <input type="number" step="0.1" inputmode="decimal" name="fuel_input" class="form-control" placeholder="0.0">
                                 <select name="fuel_unit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
                             </div>
                         </div>
@@ -176,12 +194,12 @@
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="pane-cross">
-                            <input type="number" id="targetCross" step="0.01" class="form-control mb-2" placeholder="Target %">
+                            <input type="number" id="targetCross" step="0.01" inputmode="decimal" class="form-control mb-2" placeholder="Target %">
                             <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Diagonals</small><div id="recCross" class="fw-bold text-dark mt-1">--</div></div>
                         </div>
                         <div class="tab-pane fade" id="pane-corner">
                             <select id="targetCornerSelect" class="form-select mb-2"><option value="lf">LF</option><option value="rf">RF</option><option value="lr">LR</option><option value="rr">RR</option></select>
-                            <input type="number" id="targetWeight" step="1" class="form-control mb-2" placeholder="Target Lbs">
+                            <input type="number" id="targetWeight" step="1" inputmode="decimal" class="form-control mb-2" placeholder="Target Lbs">
                             <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Spring</small><div id="recCorner" class="fw-bold text-dark mt-1">--</div></div>
                         </div>
                     </div>
@@ -193,7 +211,7 @@
                 <div class="app-card border-top border-4 border-danger">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-gas-pump text-danger me-2"></i>Fuel Predictor</h6>
                     <div class="input-group input-group-sm mb-2">
-                        <input type="number" id="fuelTargetInput" class="form-control" placeholder="Add Fuel...">
+                        <input type="number" id="fuelTargetInput" inputmode="decimal" class="form-control" placeholder="Add Fuel...">
                         <select id="fuelTargetUnit" class="form-select bg-light" style="max-width: 70px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
                     </div>
                     
@@ -215,9 +233,9 @@
                 <div class="app-card border-top border-4 border-dark">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
                     <div class="row g-2 mb-2">
-                        <div class="col-4"><input type="number" id="revLeft" class="form-control form-control-sm text-center" placeholder="L%"></div>
-                        <div class="col-4"><input type="number" id="revRear" class="form-control form-control-sm text-center" placeholder="R%"></div>
-                        <div class="col-4"><input type="number" id="revCross" class="form-control form-control-sm text-center" placeholder="C%"></div>
+                        <div class="col-4"><input type="number" id="revLeft" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="L%"></div>
+                        <div class="col-4"><input type="number" id="revRear" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="R%"></div>
+                        <div class="col-4"><input type="number" id="revCross" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="C%"></div>
                     </div>
                     <button type="button" class="btn btn-dark btn-sm w-100 mb-3" onclick="calcReverse()">Calculate Target</button>
                     <div id="revResults" class="d-none">
@@ -272,7 +290,7 @@
     // 1. UI Logic
     function switchCar() { const c=document.getElementById('carInput').value.trim(); if(c) window.location.href=`/?car_num=${encodeURIComponent(c)}`; }
     document.getElementById('carInput').addEventListener('input', function(){ document.getElementById('formCarNum').value=this.value; });
-    function clearTurns() { document.querySelectorAll('.turn-field').forEach(e => e.value=''); }
+    function clearTurns() { document.querySelectorAll('.turn-input').forEach(e => e.value=''); }
     function toggleTools() { const t=document.getElementById('toolsCol'), i=document.getElementById('inputCol'); if(t.classList.contains('d-none')) { t.classList.remove('d-none'); i.classList.remove('col-lg-12'); i.classList.add('col-lg-8'); } else { t.classList.add('d-none'); i.classList.remove('col-lg-8'); i.classList.add('col-lg-12'); } }
 
     // 2. Data & CoG
@@ -294,7 +312,6 @@
             updateCoG(lP, rP);
         }
         calcCrossPred(); calcCornerPred();
-        // Force update of fuel pred if value exists
         if(document.getElementById('fuelTargetInput').value) calcFuel();
     }
     wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
@@ -352,31 +369,20 @@
                 document.getElementById('fuelHint').classList.remove('d-none');
                 return;
             }
-            
-            // Calculate Fuel Weight
             let fuelWt = val;
             if(fuelUnit.value === 'gal') fuelWt = val * 6.2;
-            
-            // Assume 50/50 split to rear
             const halfFuel = fuelWt / 2;
-            
-            // Calculate New Weights
             const nLF = curW.lf;
             const nRF = curW.rf;
             const nLR = curW.lr + halfFuel;
             const nRR = curW.rr + halfFuel;
             const nTotal = curW.t + fuelWt;
-            
-            // Calculate New Cross
             const nCross = ((nRF + nLR) / nTotal) * 100;
-            
-            // Display
             document.getElementById('pLF').innerText = nLF.toFixed(1);
             document.getElementById('pRF').innerText = nRF.toFixed(1);
             document.getElementById('pLR').innerText = nLR.toFixed(1);
             document.getElementById('pRR').innerText = nRR.toFixed(1);
             document.getElementById('pCross').innerText = nCross.toFixed(2) + '%';
-            
             document.getElementById('fuelResults').classList.remove('d-none');
             document.getElementById('fuelHint').classList.add('d-none');
         }
