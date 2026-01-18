@@ -5,19 +5,17 @@ import io
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, redirect, url_for, g, make_response, session
+from flask import Flask, render_template, request, redirect, url_for, g, make_response, session, flash
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) # Required for session management
+app.secret_key = os.urandom(24)
 
 # --- CONFIGURATION ---
-#DB_NAME = "race_data.db"
-#DOC_PATH = Path.home() / "Documents" / "race_car_weights.csv"
-#PIN_FILE = Path("pin.txt")
+# Use BASE_DIR for PythonAnywhere compatibility
 BASE_DIR = Path(__file__).parent
 DB_NAME = BASE_DIR / "race_data.db"
 DOC_PATH = BASE_DIR / "race_car_weights.csv"
-PIN_FILE = BASE_DIR / "pin.txt"
+USERS_FILE = BASE_DIR / "users.txt"
 FUEL_DENSITY = 6.2 
 
 # --- SECURITY CONFIG ---
@@ -25,8 +23,10 @@ MAX_ATTEMPTS = 3
 LOCKOUT_TIME = 30 # Minutes
 
 # --- SCHEMA ---
+# Added 'created_by' to the schema
 FIELDNAMES = [
     "date", "car_num", "scale_num", 
+    "created_by", # NEW COLUMN
     "lf", "rf", "lr", "rr", 
     "t_lf", "t_rf", "t_lr", "t_rr", 
     "p_lf", "p_rf", "p_lr", "p_rr",
@@ -36,17 +36,27 @@ FIELDNAMES = [
     "is_baseline"
 ]
 
-# --- PIN MANAGEMENT ---
-def get_pin():
-    """Reads the PIN from a local file or creates default."""
-    if not PIN_FILE.exists():
-        with open(PIN_FILE, 'w') as f: f.write("0000")
-        print("⚠️  WARNING: Created 'pin.txt' with default PIN: 0000")
-        return "0000"
-    with open(PIN_FILE, 'r') as f:
-        return f.read().strip()
+# --- USER MANAGEMENT ---
+def get_users():
+    """Reads users.txt and returns a dict: {'Name': 'PIN'}"""
+    if not USERS_FILE.exists():
+        # Create default file if missing
+        with open(USERS_FILE, 'w') as f: 
+            f.write("Admin:0000\nDriver:1234")
+        print("⚠️  WARNING: Created default 'users.txt'")
+    
+    users = {}
+    try:
+        with open(USERS_FILE, 'r') as f:
+            for line in f:
+                if ":" in line:
+                    name, pin = line.strip().split(":", 1)
+                    users[name.strip()] = pin.strip()
+    except Exception as e:
+        print(f"Error reading users: {e}")
+    return users
 
-# --- DATABASE CONNECTION ---
+# --- DATABASE CONNECTION & MIGRATION ---
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -60,33 +70,32 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def init_db():
+def init_and_migrate_db():
+    """Creates table and adds 'created_by' column if it's missing from an old DB."""
     with app.app_context():
         db = get_db()
         cursor = db.cursor()
+        
+        # 1. Create Table if not exists
         cols = ", ".join([f"{f} TEXT" for f in FIELDNAMES]) 
         cursor.execute(f"CREATE TABLE IF NOT EXISTS setups ({cols})")
+        
+        # 2. Check for Migration (Missing 'created_by' column)
+        cursor.execute("PRAGMA table_info(setups)")
+        columns = [info[1] for info in cursor.fetchall()]
+        
+        if "created_by" not in columns:
+            print("--- MIGRATING DATABASE: Adding 'created_by' column ---")
+            try:
+                cursor.execute("ALTER TABLE setups ADD COLUMN created_by TEXT DEFAULT 'Unknown'")
+                db.commit()
+            except Exception as e:
+                print(f"Migration Error: {e}")
+        
         db.commit()
 
-def import_csv_to_sqlite():
-    if not DOC_PATH.exists(): return
-    with app.app_context():
-        db = get_db()
-        cur = db.cursor()
-        cur.execute("SELECT count(*) FROM setups")
-        if cur.fetchone()[0] > 0: return 
-        try:
-            with open(DOC_PATH, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    clean_row = [row.get(k, "0") for k in FIELDNAMES]
-                    placeholders = ",".join(["?"] * len(FIELDNAMES))
-                    cur.execute(f"INSERT INTO setups VALUES ({placeholders})", clean_row)
-                db.commit()
-        except: pass
-
-init_db()
-import_csv_to_sqlite()
+# Run setup
+init_and_migrate_db()
 
 # --- HELPERS ---
 def safe_float(val):
@@ -96,18 +105,16 @@ def safe_float(val):
 def write_backup_csv(data_dict):
     try:
         exists = DOC_PATH.exists()
-        DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
         with open(DOC_PATH, 'a', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
             if not exists: writer.writeheader()
             writer.writerow(data_dict)
     except: pass
 
-# --- LOGIN & SECURITY ROUTES ---
+# --- LOGIN ROUTES ---
 
 @app.before_request
 def require_login():
-    """Protect all routes except login and static resources."""
     if request.endpoint == 'login' or request.endpoint == 'static':
         return
     if not session.get('logged_in'):
@@ -115,45 +122,47 @@ def require_login():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # Check Lockout Status
+    # Lockout Check
     lockout_time = session.get('lockout_until')
     if lockout_time:
         if datetime.now().timestamp() < lockout_time:
             remaining = int((lockout_time - datetime.now().timestamp()) / 60) + 1
-            return render_template('login.html', error=f"Too many failed attempts. Try again in {remaining} minutes.")
+            return render_template('login.html', error=f"Locked out. Try again in {remaining} min.", users=get_users().keys())
         else:
-            # Lockout expired
             session.pop('lockout_until', None)
             session['attempts'] = 0
 
     if request.method == 'POST':
+        username = request.form.get('username')
         input_pin = request.form.get('pin')
-        correct_pin = get_pin()
-
-        if input_pin == correct_pin:
+        
+        valid_users = get_users()
+        
+        # Validate Credentials
+        if username in valid_users and valid_users[username] == input_pin:
             session['logged_in'] = True
+            session['user_name'] = username  # Store who logged in
             session['attempts'] = 0
             return redirect(url_for('index'))
         else:
-            # Handle Failure
             attempts = session.get('attempts', 0) + 1
             session['attempts'] = attempts
             
             if attempts >= MAX_ATTEMPTS:
                 lockout_end = (datetime.now() + timedelta(minutes=LOCKOUT_TIME)).timestamp()
                 session['lockout_until'] = lockout_end
-                return render_template('login.html', error=f"LOCKED OUT: Too many attempts. Wait {LOCKOUT_TIME} minutes.")
+                return render_template('login.html', error=f"LOCKED OUT: Wait {LOCKOUT_TIME} minutes.", users=valid_users.keys())
             
-            return render_template('login.html', error=f"Incorrect PIN. Attempts remaining: {MAX_ATTEMPTS - attempts}")
+            return render_template('login.html', error="Incorrect PIN.", users=valid_users.keys())
 
-    return render_template('login.html')
+    return render_template('login.html', users=get_users().keys())
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- MAIN APP ROUTES ---
+# --- MAIN ROUTES ---
 
 @app.route('/')
 def index():
@@ -166,19 +175,17 @@ def index():
     baseline_run = next((r for r in reversed(history) if r['is_baseline'] == 'Yes'), None)
     next_num = int(last_run['scale_num']) + 1 if last_run else 1
             
-    return render_template('index.html', history=history, last_run=last_run, baseline_run=baseline_run, next_num=next_num, selected_car=selected_car)
+    return render_template('index.html', history=history, last_run=last_run, baseline_run=baseline_run, next_num=next_num, selected_car=selected_car, current_user=session.get('user_name'))
 
 @app.route('/download/<car_num>')
 def download_csv(car_num):
     db = get_db()
     cur = db.execute("SELECT * FROM setups WHERE car_num = ? ORDER BY date ASC", (car_num,))
     rows = cur.fetchall()
-
     si = io.StringIO()
     writer = csv.DictWriter(si, fieldnames=FIELDNAMES)
     writer.writeheader()
     for row in rows: writer.writerow(dict(row))
-
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = f"attachment; filename=Car_{car_num}_Data.csv"
     output.headers["Content-type"] = "text/csv"
@@ -219,6 +226,7 @@ def submit():
     data = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"), "car_num": car_num,
         "scale_num": str(request.form.get('scale_num', 1)),
+        "created_by": session.get('user_name', 'Unknown'), # SAVE USER HERE
         "lf": lf, "rf": rf, "lr": lr, "rr": rr,
         "t_lf": t_lf, "t_rf": t_rf, "t_lr": t_lr, "t_rr": t_rr,
         "p_lf": p_lf, "p_rf": p_rf, "p_lr": p_lr, "p_rr": p_rr,
@@ -248,4 +256,5 @@ def delete(car_num, scale_num):
     return redirect(url_for('index', car_num=car_num))
 
 if __name__ == '__main__':
+    # host='0.0.0.0' allows access from other devices
     app.run(debug=True, port=5001, host='0.0.0.0')

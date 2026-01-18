@@ -17,9 +17,9 @@
 
 <div class="login-card">
     <div class="mb-4">
-        <i class="fa-solid fa-lock fa-3x text-primary mb-3"></i>
+        <i class="fa-solid fa-users fa-3x text-primary mb-3"></i>
         <h3 class="fw-bold">RaceEngineer</h3>
-        <p class="text-muted small">Enter 4-digit PIN to access</p>
+        <p class="text-muted small">Select user and enter PIN</p>
     </div>
 
     {% if error %}
@@ -29,11 +29,22 @@
     {% endif %}
 
     <form method="POST">
-        <div class="mb-3">
+        <div class="mb-3 text-start">
+            <label class="small text-muted fw-bold ms-1">USER</label>
+            <select name="username" class="form-select form-select-lg fw-bold mb-3">
+                {% for user in users %}
+                <option value="{{ user }}">{{ user }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="mb-3 text-start">
+            <label class="small text-muted fw-bold ms-1">PIN CODE</label>
             <input type="password" name="pin" class="form-control form-control-lg pin-input" 
-                   maxlength="4" placeholder="••••" required autofocus
+                   maxlength="4" placeholder="••••" required 
                    inputmode="numeric" pattern="[0-9]*">
         </div>
+        
         <button type="submit" class="btn btn-primary w-100 fw-bold py-2">UNLOCK</button>
     </form>
 </div>
