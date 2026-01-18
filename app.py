@@ -11,9 +11,13 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24) # Required for session management
 
 # --- CONFIGURATION ---
-DB_NAME = "race_data.db"
-DOC_PATH = Path.home() / "Documents" / "race_car_weights.csv"
-PIN_FILE = Path("pin.txt")
+#DB_NAME = "race_data.db"
+#DOC_PATH = Path.home() / "Documents" / "race_car_weights.csv"
+#PIN_FILE = Path("pin.txt")
+BASE_DIR = Path(__file__).parent
+DB_NAME = BASE_DIR / "race_data.db"
+DOC_PATH = BASE_DIR / "race_car_weights.csv"
+PIN_FILE = BASE_DIR / "pin.txt"
 FUEL_DENSITY = 6.2 
 
 # --- SECURITY CONFIG ---

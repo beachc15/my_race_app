@@ -2,3 +2,4 @@ venv/
 .vscode/
 race_data.db
 pin.txt
+race_care_weights.csv

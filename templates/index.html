@@ -239,9 +239,9 @@
                 <div class="app-card border-top border-4 border-dark">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
                     <div class="row g-2 mb-2">
-                        <div class="col-4"><input type="number" id="revLeft" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="L%"></div>
-                        <div class="col-4"><input type="number" id="revRear" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="R%"></div>
-                        <div class="col-4"><input type="number" id="revCross" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="C%"></div>
+                        <div class="col-4"><input type="number" id="revLeft" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="L%"></div>
+                        <div class="col-4"><input type="number" id="revRear" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="R%"></div>
+                        <div class="col-4"><input type="number" id="revCross" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="C%"></div>
                     </div>
                     <button type="button" class="btn btn-dark btn-sm w-100 mb-3" onclick="calcReverse()">Calculate Target</button>
                     <div id="revError" class="alert alert-danger d-none mt-2 small p-2 text-center"></div>
@@ -302,15 +302,14 @@
 
     // 2. Data & CoG
     const wIds = ['lf','rf','lr','rr'];
-    // Inject Last Run data safely for JS
-    const lastRun = {{ last_run|tojson|safe if last_run else 'null' }};
+    // FIXED LINE BELOW TO REMOVE SYNTAX ERROR
+    const lastRun = {{ last_run|tojson|safe }};
     
     let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
     const baseL = parseFloat("{{ baseline_run.left_pct if baseline_run else 0 }}");
     const baseR = parseFloat("{{ baseline_run.rear_pct if baseline_run else 0 }}");
 
     function updateLive() {
-        // Read Inputs
         let inputTotal = 0;
         let inputW = {lf:0, rf:0, lr:0, rr:0, t:0};
         wIds.forEach(k => { 
@@ -322,7 +321,6 @@
         const totalDisplay = document.getElementById('live-total');
         const sourceLabel = document.getElementById('source-label');
 
-        // Logic: Use inputs if valid, otherwise fallback to lastRun
         if (inputTotal > 0) {
             curW = {...inputW, t: inputTotal};
             totalDisplay.innerText = inputTotal.toFixed(1);
@@ -336,7 +334,6 @@
                 rr: parseFloat(lastRun.rr),
                 t: parseFloat(lastRun.total)
             };
-            // Update the display to show ghost values (Visual Feedback)
             totalDisplay.innerText = curW.t.toFixed(1);
             totalDisplay.classList.add('text-muted');
             sourceLabel.style.display = 'block';
@@ -346,7 +343,6 @@
             sourceLabel.style.display = 'none';
         }
 
-        // Always update metrics based on curW
         if(curW.t > 0) {
             const cP = ((curW.rf+curW.lr)/curW.t)*100; 
             const lP = ((curW.lf+curW.lr)/curW.t)*100; 
@@ -363,7 +359,6 @@
         if(document.getElementById('fuelTargetInput').value) calcFuel();
     }
     
-    // Trigger update on load to populate from Last Run if exists
     window.addEventListener('load', updateLive);
     wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
 

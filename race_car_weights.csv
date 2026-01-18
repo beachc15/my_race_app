@@ -1,0 +1,2 @@
+date,car_num,scale_num,lf,rf,lr,rr,t_lf,t_rf,t_lr,t_rr,p_lf,p_rf,p_lr,p_rr,total,cross_pct,left_pct,rear_pct,fuel_lbs,adjustment_notes,sway_bar,wt_per_turn,fuel_sensitivity,is_baseline
+2026-01-18 10:59,1,11,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,4.0,50.0,50.0,50.0,0.0,,Disconnected,0.0,0.0,No
