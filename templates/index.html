@@ -7,38 +7,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <style>
         :root { --bg-body: #f8fafc; --primary: #3b82f6; --dark: #0f172a; --card-border: #cbd5e1; }
         body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; color: var(--dark); }
         .app-card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--card-border); padding: 20px; margin-bottom: 24px; }
-        
-        /* Input Styling */
         .weight-input { font-size: 1.6rem; font-weight: 800; text-align: center; border: 1px solid #94a3b8; border-radius: 8px 8px 0 0; background: #f8fafc; height: 60px; z-index: 2; }
         .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.3); z-index: 3; }
-        
         .turn-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-right: none; border-radius: 0 0 0 8px; text-align: center; font-size: 0.8rem; background: #fffbeb; color: #b45309; font-weight: 600; padding: 4px; }
         .psi-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-radius: 0 0 8px 0; text-align: center; font-size: 0.8rem; background: #eff6ff; color: #1e40af; font-weight: 600; padding: 4px; }
-
-        /* CoG Plot */
+        .metric-badge { background: #f1f5f9; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e2e8f0; }
+        .clickable-run { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
+        .baseline-row { background-color: #f0fdf4 !important; }
         .cog-plot { position: relative; height: 180px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px; }
         .cog-point { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.5s ease; z-index: 2; }
         .cog-current { background: #ef4444; }
         .cog-baseline { background: #22c55e; opacity: 0.6; z-index: 1; }
-        
-        /* Axis Labels */
-        .axis-label { position: absolute; font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
-        .axis-l { top: 50%; left: 5px; transform: translateY(-50%); }
-        .axis-r { top: 50%; right: 5px; transform: translateY(-50%); }
-        .axis-t { top: 5px; left: 50%; transform: translateX(-50%); }
-        .axis-b { bottom: 5px; left: 50%; transform: translateX(-50%); }
-
-        /* Misc */
-        .metric-badge { background: #f1f5f9; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e2e8f0; }
-        .clickable-run { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
-        .baseline-row { background-color: #f0fdf4 !important; }
-        .diff-pos { color: #dc2626; font-weight: 700; }
-        .diff-neg { color: #2563eb; font-weight: 700; }
         .rev-result-box { font-size: 0.85rem; background: #f1f5f9; padding: 8px; border-radius: 6px; margin-bottom: 4px; }
         .rev-delta { font-size: 0.8rem; font-weight: 700; }
         #compareBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 999; border-radius: 50px; padding: 12px 28px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
@@ -49,12 +32,8 @@
 <body>
 
 <div class="container py-4">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
-        </div>
-        
+        <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
         <div class="d-flex gap-2 align-items-center">
             <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="toggleTools()">
                 <i class="fa-solid fa-toolbox me-1"></i> Tools
@@ -77,8 +56,6 @@
                 <div class="cog-plot" id="cogContainer">
                     <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#cbd5e1;"></div>
                     <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#cbd5e1;"></div>
-                    <span class="axis-label axis-l">L:60%</span><span class="axis-label axis-r">L:40%</span>
-                    <span class="axis-label axis-t">R:60%</span><span class="axis-label axis-b">R:40%</span>
                     <div id="cogBase" class="cog-point cog-baseline" style="display:none;"></div>
                     <div id="cogCur" class="cog-point cog-current" style="display:none;"></div>
                 </div>
@@ -118,7 +95,6 @@
                             <label class="form-check-label small fw-bold text-success" for="baseCheck">SET BASELINE</label>
                         </div>
                     </div>
-                    
                     <div class="row g-3 mb-3">
                         <div class="col-5">
                             <label class="small text-muted fw-bold d-block text-center mb-1">LF</label>
@@ -159,7 +135,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="app-card">
                     <h6 class="fw-bold mb-3">Session Details</h6>
                     <div class="row g-3 mb-3">
@@ -185,7 +160,6 @@
             </div>
 
             <div class="col-lg-4" id="toolsCol">
-                
                 <div class="app-card border-top border-4 border-primary">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-wrench text-primary me-2"></i>Turn Predictor</h6>
                     {% if last_run and (last_run.wt_per_turn|float != 0) %}
@@ -208,7 +182,6 @@
                         <p class="small text-muted fst-italic">Record weights + turns to enable.</p>
                     {% endif %}
                 </div>
-
                 <div class="app-card border-top border-4 border-danger">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-gas-pump text-danger me-2"></i>Fuel Predictor</h6>
                     {% if last_run and (last_run.fuel_sensitivity|float != 0) %}
@@ -221,7 +194,6 @@
                         <p class="small text-muted fst-italic">Record fuel add (no turns) to learn.</p>
                     {% endif %}
                 </div>
-
                 <div class="app-card border-top border-4 border-dark">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
                     <div class="row g-2 mb-2">
@@ -239,7 +211,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </form>
@@ -251,9 +222,7 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-history">
-                <thead class="bg-light">
-                    <tr><th class="ps-4">Sel</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr>
-                </thead>
+                <thead class="bg-light"><tr><th class="ps-4">Sel</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr></thead>
                 <tbody>
                     {% for run in history|reverse %}
                     <tr class="{{ 'baseline-row' if run.is_baseline == 'Yes' }}">
@@ -282,13 +251,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 1. UI Helpers
+    // 1. UI Logic
     function switchCar() { const c=document.getElementById('carInput').value.trim(); if(c) window.location.href=`/?car_num=${encodeURIComponent(c)}`; }
     document.getElementById('carInput').addEventListener('input', function(){ document.getElementById('formCarNum').value=this.value; });
     function clearTurns() { document.querySelectorAll('.turn-field').forEach(e => e.value=''); }
     function toggleTools() { const t=document.getElementById('toolsCol'), i=document.getElementById('inputCol'); if(t.classList.contains('d-none')) { t.classList.remove('d-none'); i.classList.remove('col-lg-12'); i.classList.add('col-lg-8'); } else { t.classList.add('d-none'); i.classList.remove('col-lg-8'); i.classList.add('col-lg-12'); } }
 
-    // 2. State & CoG
+    // 2. Data & CoG
     const wIds = ['lf','rf','lr','rr'];
     let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
     const baseL = parseFloat("{{ baseline_run.left_pct if baseline_run else 0 }}");
@@ -365,7 +334,7 @@
         fuelIn.addEventListener('input', calcFuel); fuelUnit.addEventListener('change', calcFuel);
     }
 
-    // 4. Modal Helpers
+    // 4. Modal
     function toggleCompare() { document.getElementById('compareBtn').style.display = (document.querySelectorAll('.compare-check:checked').length===2)?'block':'none'; }
     function showPopUp(el) {
         const r=JSON.parse(el.getAttribute('data-run'));
