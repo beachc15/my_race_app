@@ -174,8 +174,16 @@ def index():
     last_run = history[-1] if history else None
     baseline_run = next((r for r in reversed(history) if r['is_baseline'] == 'Yes'), None)
     next_num = int(last_run['scale_num']) + 1 if last_run else 1
-            
-    return render_template('index.html', history=history, last_run=last_run, baseline_run=baseline_run, next_num=next_num, selected_car=selected_car, current_user=session.get('user_name'))
+    
+    # --- NO CHANGES ABOVE THIS LINE ---
+
+    return render_template('index.html', 
+                           history=history, 
+                           last_run=last_run, 
+                           baseline_run=baseline_run, 
+                           next_num=next_num, 
+                           selected_car=selected_car, 
+                           current_user=session.get('user_name'))
 
 @app.route('/download/<car_num>')
 def download_csv(car_num):

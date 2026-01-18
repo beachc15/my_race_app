@@ -4,490 +4,686 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RaceEngineer | Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
     <style>
-        :root { --bg-body: #f8fafc; --primary: #3b82f6; --dark: #0f172a; --card-border: #cbd5e1; }
-        body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; color: var(--dark); }
-        .app-card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--card-border); padding: 20px; margin-bottom: 24px; }
-        .weight-input { font-size: 1.6rem; font-weight: 800; text-align: center; border: 1px solid #94a3b8; border-radius: 8px 8px 0 0; background: #f8fafc; height: 60px; z-index: 2; }
-        .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.3); z-index: 3; }
-        .turn-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-right: none; border-radius: 0 0 0 8px; text-align: center; font-size: 0.8rem; background: #fffbeb; color: #b45309; font-weight: 600; padding: 4px; cursor: pointer; appearance: none; -webkit-appearance: none; }
-        .psi-input { width: 50%; border: 1px solid #94a3b8; border-top: none; border-radius: 0 0 8px 0; text-align: center; font-size: 0.8rem; background: #eff6ff; color: #1e40af; font-weight: 600; padding: 4px; }
-        .metric-badge { background: #f1f5f9; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e2e8f0; }
-        .clickable-run { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
-        .baseline-row { background-color: #f0fdf4 !important; }
-        .cog-plot { position: relative; height: 180px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px; }
-        .cog-point { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.5s ease; z-index: 2; }
-        .cog-current { background: #ef4444; }
-        .cog-baseline { background: #22c55e; opacity: 0.6; z-index: 1; }
-        .rev-result-box { font-size: 0.85rem; background: #f1f5f9; padding: 8px; border-radius: 6px; margin-bottom: 4px; }
-        .rev-delta { font-size: 0.8rem; font-weight: 700; }
-        .pred-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 4px; font-size: 0.85rem; font-weight: 600; color: #be123c; }
-        #compareBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 999; border-radius: 50px; padding: 12px 28px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
+        :root { 
+            --bg-body: #f1f5f9; 
+            --primary: #2563eb; 
+            --primary-dark: #1e40af;
+            --text-dark: #0f172a; 
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+        
+        body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; color: var(--text-dark); -webkit-font-smoothing: antialiased; }
+        
+        /* Card Styling */
+        .app-card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            border: 1px solid var(--border-color); 
+            padding: 24px; 
+            margin-bottom: 24px; 
+            transition: transform 0.2s ease;
+        }
+        
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 { letter-spacing: -0.025em; font-weight: 700; color: #1e293b; }
+        .label-small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+
+        /* Professional Inputs */
+        .weight-input { 
+            font-size: 1.8rem; font-weight: 800; text-align: center; color: #334155;
+            border: 2px solid #e2e8f0; border-radius: 12px 12px 0 0; 
+            background: #f8fafc; height: 70px; z-index: 2; transition: all 0.2s;
+        }
+        .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .weight-input::placeholder { color: #cbd5e1; }
+
+        .sub-input-group { display: flex; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .turn-input, .psi-input {
+            width: 50%; border: 2px solid #e2e8f0; border-top: none; 
+            text-align: center; font-size: 0.85rem; font-weight: 600; padding: 8px;
+            appearance: none; -webkit-appearance: none; cursor: pointer;
+        }
+        .turn-input { border-radius: 0 0 0 12px; background: #fff7ed; color: #ea580c; border-right: 1px solid #e2e8f0; }
+        .psi-input { border-radius: 0 0 12px 0; background: #eff6ff; color: #2563eb; border-left: 1px solid #e2e8f0; }
+
+        /* Metrics */
+        .metric-card { background: white; border-radius: 12px; padding: 12px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .metric-value { font-size: 1.25rem; font-weight: 800; color: #334155; }
+        
+        /* Prediction Boxes */
+        .pred-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 8px; text-align: center; }
+        .pred-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #be123c; }
+
+        /* Table */
+        .table-history th { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+        .table-history td { font-size: 0.9rem; vertical-align: middle; }
+        .baseline-row { background-color: #ecfdf5 !important; }
+        
+        /* Utilities */
+        .ghost-data { color: #94a3b8 !important; }
+        .ghost-badge { background: #f1f5f9; color: #64748b; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 4px; }
     </style>
 </head>
 <body>
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
-            <small class="text-muted" style="font-size: 0.7rem;">Logged in as: <b>{{ current_user }}</b> <a href="/logout" class="text-decoration-none ms-1">(Logout)</a></small>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
+<div id="app" v-cloak>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm sticky-top py-3">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-flag-checkered text-primary fa-xl me-3"></i>
+                <div class="lh-1">
+                    <h5 class="mb-0 fw-bold">RaceEngineer <span class="badge bg-primary rounded-pill align-top" style="font-size:0.5em">PRO</span></h5>
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        Logged in: <b class="text-dark">${ currentUser }</b>
+                        <a href="/logout" class="text-decoration-none ms-1 text-primary fw-bold hover-underline">Logout</a>
+                    </small>
+                </div>
+            </div>
             
-            <a href="/download/{{ selected_car }}" class="btn btn-sm btn-success fw-bold text-white shadow-sm">
-                <i class="fa-solid fa-cloud-arrow-down me-1"></i> CSV
-            </a>
+            <div class="d-flex gap-2 align-items-center">
+                <a :href="'/download/' + selectedCar" class="btn btn-light border fw-bold btn-sm text-secondary">
+                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> CSV
+                </a>
 
-            <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="toggleTools()">
-                <i class="fa-solid fa-toolbox me-1"></i> Tools
-            </button>
-            <div class="input-group shadow-sm w-auto">
-                <span class="input-group-text bg-white fw-bold text-muted border-end-0">#</span>
-                <input type="text" id="carInput" class="form-control text-center fw-bold border-start-0" value="{{ selected_car|default('1') }}" style="width: 60px;">
-                <button class="btn btn-dark" onclick="switchCar()">LOAD</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="app-card h-100 mb-0 py-3 position-relative">
-                <div class="d-flex justify-content-between mb-2">
-                    <small class="fw-bold text-muted">CENTER OF GRAVITY (40% - 60%)</small>
-                    <div class="small"><span class="text-success fw-bold">● Base</span> <span class="text-danger fw-bold ms-2">● Cur</span></div>
-                </div>
-                <div class="cog-plot" id="cogContainer">
-                    <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#cbd5e1;"></div>
-                    <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#cbd5e1;"></div>
-                    <div id="cogBase" class="cog-point cog-baseline" style="display:none;"></div>
-                    <div id="cogCur" class="cog-point cog-current" style="display:none;"></div>
+                <div class="input-group input-group-sm w-auto">
+                    <span class="input-group-text bg-white fw-bold text-muted border-end-0">CAR #</span>
+                    <input type="text" class="form-control text-center fw-bold border-start-0" 
+                           style="width: 50px;" v-model="selectedCarInput" @keyup.enter="loadCar">
+                    <button class="btn btn-dark fw-bold" @click="loadCar">LOAD</button>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="row h-100 g-3">
-                <div class="col-6">
-                    <div class="app-card h-100 mb-0 py-3 d-flex flex-column justify-content-center text-center border-start border-4 border-success">
-                        <small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Baseline Cross</small>
-                        <div class="h2 fw-bold text-success mb-0">{{ baseline_run.cross_pct if baseline_run else '--' }}%</div>
-                        {% if baseline_run %}<small class="text-muted">#{{ baseline_run.scale_num }}</small>{% endif %}
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="app-card h-100 mb-0 py-3 d-flex flex-column justify-content-center text-center border-start border-4 border-primary">
-                        <small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Current Cross</small>
-                        <div class="h2 fw-bold text-primary mb-0">{{ last_run.cross_pct if last_run else '--' }}%</div>
-                        {% if last_run %}<small class="text-muted">#{{ last_run.scale_num }}</small>{% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </nav>
 
-    <form action="/submit" method="POST">
-        <input type="hidden" name="car_num" id="formCarNum" value="{{ selected_car }}">
-        <input type="hidden" name="scale_num" value="{{ next_num }}">
-
-        <div class="row g-4">
-            <div class="col-lg-8" id="inputCol">
-                <div class="app-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold mb-0">Scale Drop #{{ next_num }}</h5>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_baseline" id="baseCheck">
-                            <label class="form-check-label small fw-bold text-success" for="baseCheck">SET BASELINE</label>
+    <div class="container py-4">
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="app-card h-100 p-3 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="label-small mb-0">Center of Gravity (Left / Rear)</span>
+                        <div>
+                            <span v-if="baselineRun" class="badge bg-success bg-opacity-10 text-success me-2">● Base</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger">● Current</span>
                         </div>
                     </div>
-                    
-                    {% macro turn_options() %}
-                        <option value="" selected disabled>Turns</option>
-                        {% for i in range(-16, 17) %}
-                            <option value="{{ i/4 }}">{{ i/4 }}</option>
-                        {% endfor %}
-                    {% endmacro %}
+                    <div class="position-relative w-100" style="height: 250px;">
+                        <canvas id="cogChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-5">
-                            <label class="small text-muted fw-bold d-block text-center mb-1">LF</label>
-                            <div class="d-flex flex-column">
-                                <input type="number" step="0.1" inputmode="decimal" name="lf" id="lf" class="form-control weight-input" placeholder="Lbs" required autofocus>
-                                <div class="d-flex">
-                                    <select name="t_lf" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+            <div class="col-md-6">
+                <div class="row g-3 h-100">
+                    <div class="col-6">
+                        <div class="app-card h-100 d-flex flex-column justify-content-center text-center border-start border-4 border-success">
+                            <span class="label-small">Baseline Cross</span>
+                            <div class="display-5 fw-bold text-success ls-tighter">
+                                ${ baselineRun ? baselineRun.cross_pct + '%' : '--' }
+                            </div>
+                            <small class="text-muted fw-bold" v-if="baselineRun">Run #${ baselineRun.scale_num }</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="app-card h-100 d-flex flex-column justify-content-center text-center border-start border-4 border-primary">
+                            <span class="label-small">Current Cross</span>
+                            <div class="display-5 fw-bold text-primary ls-tighter">
+                                ${ effectiveStats.cross.toFixed(2) }%
+                            </div>
+                            <small v-if="usingGhostData" class="ghost-badge">Ghost Data</small>
+                            <small v-else class="text-muted fw-bold">Live Data</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form action="/submit" method="POST" ref="mainForm">
+            <input type="hidden" name="car_num" :value="selectedCar">
+            <input type="hidden" name="scale_num" :value="nextNum">
+            
+            <input type="hidden" v-for="key in ['lf','rf','lr','rr']" :name="key" :value="weights[key]">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="app-card">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <h5 class="mb-0 fw-bold">Scale Drop #${ nextNum }</h5>
+                                <span v-if="usingGhostData" class="badge bg-warning text-dark"><i class="fa-solid fa-ghost me-1"></i> PRE-FILL ACTIVE</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_baseline" id="baseCheck">
+                                <label class="form-check-label label-small mb-0 text-success cursor-pointer" for="baseCheck">SET BASELINE</label>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4 align-items-end">
+                            <div class="col-5">
+                                <label class="label-small text-center">LF</label>
+                                <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.lf" class="form-control weight-input" placeholder="0">
+                                <div class="sub-input-group">
+                                    <select name="t_lf" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
                                     <input type="number" step="0.1" inputmode="decimal" name="p_lf" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="col-2 d-flex flex-column justify-content-center align-items-center">
-                            <small class="text-muted fw-bold" style="font-size: 0.65rem;">TOTAL</small>
-                            <div id="live-total" class="h4 fw-bolder mb-0">0</div>
-                            <small id="source-label" class="text-muted fw-bold" style="font-size: 0.6rem; display:none;">(Last Run)</small>
-                        </div>
-                        
-                        <div class="col-5">
-                            <label class="small text-muted fw-bold d-block text-center mb-1">RF</label>
-                            <div class="d-flex flex-column">
-                                <input type="number" step="0.1" inputmode="decimal" name="rf" id="rf" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex">
-                                    <select name="t_rf" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+                            <div class="col-2 text-center pb-4">
+                                <span class="label-small">TOTAL</span>
+                                <div class="h3 fw-bold mb-0" :class="{'ghost-data': usingGhostData}">
+                                    ${ effectiveStats.total.toFixed(1) }
+                                </div>
+                            </div>
+                            <div class="col-5">
+                                <label class="label-small text-center">RF</label>
+                                <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.rf" class="form-control weight-input" placeholder="0">
+                                <div class="sub-input-group">
+                                    <select name="t_rf" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
                                     <input type="number" step="0.1" inputmode="decimal" name="p_rf" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Cross</small><div id="live-cross" class="h5 fw-bold text-primary mb-0">0.00%</div></div></div>
-                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Left</small><div id="live-left" class="h5 fw-bold mb-0">0.0%</div></div></div>
-                        <div class="col-4"><div class="metric-badge"><small class="text-uppercase text-muted fw-bold d-block" style="font-size:0.7rem;">Rear</small><div id="live-rear" class="h5 fw-bold mb-0">0.0%</div></div></div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-5">
-                            <label class="small text-muted fw-bold d-block text-center mb-1">LR</label>
-                            <div class="d-flex flex-column">
-                                <input type="number" step="0.1" inputmode="decimal" name="lr" id="lr" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex">
-                                    <select name="t_lr" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
-                                    <input type="number" step="0.1" inputmode="decimal" name="p_lr" class="psi-input" placeholder="Psi">
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-4">
+                                <div class="metric-card">
+                                    <span class="label-small">Cross</span>
+                                    <div class="metric-value text-primary">${ effectiveStats.cross.toFixed(2) }%</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="metric-card">
+                                    <span class="label-small">Left</span>
+                                    <div class="metric-value">${ effectiveStats.left.toFixed(1) }%</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="metric-card">
+                                    <span class="label-small">Rear</span>
+                                    <div class="metric-value">${ effectiveStats.rear.toFixed(1) }%</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-2"></div>
-                        <div class="col-5">
-                            <label class="small text-muted fw-bold d-block text-center mb-1">RR</label>
-                            <div class="d-flex flex-column">
-                                <input type="number" step="0.1" inputmode="decimal" name="rr" id="rr" class="form-control weight-input" placeholder="Lbs" required>
-                                <div class="d-flex">
-                                    <select name="t_rr" class="turn-input form-select text-center p-0">{{ turn_options() }}</select>
+
+                        <div class="row g-3">
+                            <div class="col-5">
+                                <label class="label-small text-center">LR</label>
+                                <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.lr" class="form-control weight-input" placeholder="0">
+                                <div class="sub-input-group">
+                                    <select name="t_lr" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_lr" class="psi-input" placeholder="Psi">
+                                </div>
+                            </div>
+                            <div class="col-2"></div>
+                            <div class="col-5">
+                                <label class="label-small text-center">RR</label>
+                                <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.rr" class="form-control weight-input" placeholder="0">
+                                <div class="sub-input-group">
+                                    <select name="t_rr" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
                                     <input type="number" step="0.1" inputmode="decimal" name="p_rr" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="app-card">
-                    <h6 class="fw-bold mb-3">Session Details</h6>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="small text-muted fw-bold">FUEL ADDED</label>
-                            <div class="input-group">
-                                <input type="number" step="0.1" inputmode="decimal" name="fuel_input" class="form-control" placeholder="0.0">
-                                <select name="fuel_unit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+
+                    <div class="app-card">
+                        <h6 class="fw-bold mb-3">Session Details</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="label-small">FUEL ADDED</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" inputmode="decimal" name="fuel_input" class="form-control fw-bold" placeholder="0.0">
+                                    <select name="fuel_unit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="label-small">SWAY BAR</label>
+                                <select name="sway_bar" class="form-select fw-bold text-secondary"><option value="Disconnected">Disconnected</option><option value="Neutral">Neutral</option><option value="Preloaded">Preloaded</option></select>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="small text-muted fw-bold">SWAY BAR</label>
-                            <select name="sway_bar" class="form-select"><option value="Disconnected">Disconnected</option><option value="Neutral">Neutral</option><option value="Preloaded">Preloaded</option></select>
+                        <label class="label-small">NOTES</label>
+                        <textarea name="adjustment_notes" class="form-control mb-3 bg-light" rows="2" placeholder="Describe changes..."></textarea>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-sm">SAVE RUN</button>
                         </div>
-                    </div>
-                    <label class="small text-muted fw-bold">NOTES</label>
-                    <textarea name="adjustment_notes" class="form-control mb-3" rows="2" placeholder="Describe changes..."></textarea>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none" onclick="clearTurns()">Reset Turns</button>
-                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow">SAVE RUN</button>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-lg-4" id="toolsCol">
-                
-                <div class="app-card border-top border-4 border-primary">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-wrench text-primary me-2"></i>Turn Predictor</h6>
-                    {% if last_run and (last_run.wt_per_turn|float != 0) %}
-                    <ul class="nav nav-tabs nav-fill mb-3" id="predTabs" role="tablist">
-                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-cross" type="button">Cross %</button></li>
-                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-corner" type="button">Corner</button></li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="pane-cross">
-                            <input type="number" id="targetCross" step="0.01" inputmode="decimal" class="form-control mb-2" placeholder="Target %">
-                            <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Diagonals</small><div id="recCross" class="fw-bold text-dark mt-1">--</div></div>
-                        </div>
-                        <div class="tab-pane fade" id="pane-corner">
-                            <select id="targetCornerSelect" class="form-select mb-2"><option value="lf">LF</option><option value="rf">RF</option><option value="lr">LR</option><option value="rr">RR</option></select>
-                            <input type="number" id="targetWeight" step="1" inputmode="decimal" class="form-control mb-2" placeholder="Target Lbs">
-                            <div class="alert alert-light border text-center p-2 mb-0"><small class="fw-bold text-muted text-uppercase">Adjust Spring</small><div id="recCorner" class="fw-bold text-dark mt-1">--</div></div>
-                        </div>
-                    </div>
-                    {% else %}
-                        <p class="small text-muted fst-italic">Record weights + turns to enable.</p>
-                    {% endif %}
-                </div>
-
-                <div class="app-card border-top border-4 border-danger">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-gas-pump text-danger me-2"></i>Fuel Predictor</h6>
-                    <div class="input-group input-group-sm mb-2">
-                        <input type="number" id="fuelTargetInput" inputmode="decimal" class="form-control" placeholder="Add Fuel...">
-                        <select id="fuelTargetUnit" class="form-select bg-light" style="max-width: 70px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
-                    </div>
+                <div class="col-lg-4">
                     
-                    <div id="fuelResults" class="d-none mt-3">
-                        <div class="row g-2 text-center mb-2">
-                            <div class="col-6"><div class="pred-box">LF <span id="pLF"></span></div></div>
-                            <div class="col-6"><div class="pred-box">RF <span id="pRF"></span></div></div>
-                            <div class="col-6"><div class="pred-box">LR <span id="pLR"></span></div></div>
-                            <div class="col-6"><div class="pred-box">RR <span id="pRR"></span></div></div>
+                    <div class="app-card border-top border-4 border-primary">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-wrench text-primary me-2"></i>
+                            <h6 class="fw-bold mb-0">Turn Predictor</h6>
                         </div>
-                        <div class="text-center p-2 bg-light rounded border">
-                            <small class="text-muted fw-bold text-uppercase">New Cross Weight</small>
-                            <div id="pCross" class="h4 fw-bold text-danger mb-0">--%</div>
-                        </div>
-                    </div>
-                    <div id="fuelHint" class="small text-muted fst-italic mt-2">Enter fuel to see new weights (Assumes 50/50 rear add).</div>
-                </div>
 
-                <div class="app-card border-top border-4 border-dark">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
-                    <div class="row g-2 mb-2">
-                        <div class="col-4"><input type="number" id="revLeft" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="L%"></div>
-                        <div class="col-4"><input type="number" id="revRear" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="R%"></div>
-                        <div class="col-4"><input type="number" id="revCross" value="50" inputmode="decimal" class="form-control form-control-sm text-center" placeholder="C%"></div>
-                    </div>
-                    <button type="button" class="btn btn-dark btn-sm w-100 mb-3" onclick="calcReverse()">Calculate Target</button>
-                    <div id="revError" class="alert alert-danger d-none mt-2 small p-2 text-center"></div>
-                    <div id="revResults" class="d-none">
-                        <div class="row g-2">
-                            <div class="col-6"><div class="rev-result-box">LF <span class="rev-val" id="outLF"></span><span class="rev-delta" id="diffLF"></span></div></div>
-                            <div class="col-6"><div class="rev-result-box">RF <span class="rev-val" id="outRF"></span><span class="rev-delta" id="diffRF"></span></div></div>
-                            <div class="col-6"><div class="rev-result-box">LR <span class="rev-val" id="outLR"></span><span class="rev-delta" id="diffLR"></span></div></div>
-                            <div class="col-6"><div class="rev-result-box">RR <span class="rev-val" id="outRR"></span><span class="rev-delta" id="diffRR"></span></div></div>
+                        <div v-if="hasTurnData">
+                             <ul class="nav nav-pills nav-fill mb-3" style="font-size: 0.8rem;">
+                                <li class="nav-item">
+                                    <a class="nav-link fw-bold" :class="{active: predMode==='cross'}" @click.prevent="predMode='cross'" href="#">Cross %</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link fw-bold" :class="{active: predMode==='corner'}" @click.prevent="predMode='corner'" href="#">Corner</a>
+                                </li>
+                            </ul>
+
+                            <div v-if="predMode === 'cross'">
+                                <input type="number" v-model.number="targetCross" step="0.01" inputmode="decimal" class="form-control mb-2 text-center fw-bold" placeholder="Target %">
+                                <div class="alert alert-light border text-center p-2 mb-0">
+                                    <span class="label-small">RF / LR ADJUSTMENT</span>
+                                    <div class="fw-bold text-dark mt-1 mono-font">${ turnPredictionResult }</div>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <select v-model="targetCorner" class="form-select mb-2 text-center fw-bold text-uppercase">
+                                    <option value="lf">LF</option><option value="rf">RF</option><option value="lr">LR</option><option value="rr">RR</option>
+                                </select>
+                                <input type="number" v-model.number="targetCornerWeight" step="1" inputmode="decimal" class="form-control mb-2 text-center fw-bold" placeholder="Target Lbs">
+                                <div class="alert alert-light border text-center p-2 mb-0">
+                                    <span class="label-small">SPRING ADJUSTMENT</span>
+                                    <div class="fw-bold text-dark mt-1 mono-font">${ cornerPredictionResult }</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-3">
+                            <small class="text-muted fst-italic">Record weights + turns on a run to unlock predictions.</small>
                         </div>
                     </div>
+
+                    <div class="app-card border-top border-4 border-danger">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-gas-pump text-danger me-2"></i>
+                            <h6 class="fw-bold mb-0">Fuel Predictor</h6>
+                        </div>
+                        <div class="input-group input-group-sm mb-3">
+                            <input type="number" v-model.number="fuelInput" inputmode="decimal" class="form-control fw-bold" placeholder="Add Fuel...">
+                            <select v-model="fuelUnit" class="form-select bg-light fw-bold" style="max-width: 80px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                        </div>
+
+                        <div v-if="fuelInput > 0">
+                            <div class="row g-2 text-center mb-2">
+                                <div class="col-6"><div class="pred-box">LF <span class="pred-val">${ fuelPred.lf }</span></div></div>
+                                <div class="col-6"><div class="pred-box">RF <span class="pred-val">${ fuelPred.rf }</span></div></div>
+                                <div class="col-6"><div class="pred-box">LR <span class="pred-val">${ fuelPred.lr }</span></div></div>
+                                <div class="col-6"><div class="pred-box">RR <span class="pred-val">${ fuelPred.rr }</span></div></div>
+                            </div>
+                            <div class="text-center p-2 bg-light rounded border">
+                                <span class="label-small">NEW CROSS WEIGHT</span>
+                                <div class="h4 fw-bold text-danger mb-0 mono-font">${ fuelPred.cross }%</div>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <small class="text-muted fst-italic display-block text-center">Using ${ usingGhostData ? 'Last Run' : 'Live' } weights.</small>
+                        </div>
+                    </div>
+
+                    <div class="app-card border-top border-4 border-dark">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-calculator text-dark me-2"></i>
+                            <h6 class="fw-bold mb-0">Reverse Calc</h6>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4 px-1"><label class="label-small text-center">Left%</label><input type="number" v-model.number="revTarget.left" class="form-control form-control-sm text-center fw-bold"></div>
+                            <div class="col-4 px-1"><label class="label-small text-center">Rear%</label><input type="number" v-model.number="revTarget.rear" class="form-control form-control-sm text-center fw-bold"></div>
+                            <div class="col-4 px-1"><label class="label-small text-center">Cross%</label><input type="number" v-model.number="revTarget.cross" class="form-control form-control-sm text-center fw-bold"></div>
+                        </div>
+                        
+                        <div v-if="effectiveStats.total > 0">
+                            <div class="row g-2">
+                                <div class="col-6" v-for="(val, key) in reverseResults" :key="key">
+                                    <div class="rev-result-box d-flex justify-content-between">
+                                        <span class="text-uppercase fw-bold text-muted">${key}</span>
+                                        <span class="mono-font fw-bold">${val.target}</span>
+                                        <span class="small fw-bold" :class="val.diff > 0 ? 'text-danger' : 'text-primary'">
+                                            ${ val.diff > 0 ? '+' : ''}${val.diff}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center">
+                            <small class="text-muted">Waiting for weights...</small>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-        </div>
-    </form>
+        </form>
 
-    <div class="app-card p-0 overflow-hidden">
-        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0 text-uppercase text-muted small">History Log</h6>
-            <span class="badge bg-white text-dark border">{{ history|length }} Runs</span>
+        <div class="app-card p-0 overflow-hidden">
+            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <span class="label-small mb-0">History Log</span>
+                <span class="badge bg-white text-dark border shadow-sm">{{ history.length }} Runs</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-history">
+                    <thead><tr><th class="ps-4">User</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Notes</th><th></th></tr></thead>
+                    <tbody>
+                        <tr v-for="run in history.slice().reverse()" :key="run.scale_num" :class="{'baseline-row': run.is_baseline === 'Yes'}">
+                            <td class="ps-4"><span class="badge bg-secondary rounded-pill small fw-normal">${ run.created_by || 'Unk' }</span></td>
+                            <td>
+                                <span class="fw-bold text-primary cursor-pointer" @click="showRunDetails(run)">#${ run.scale_num }</span>
+                                <i v-if="run.is_baseline === 'Yes'" class="fa-solid fa-star text-success ms-1 small"></i>
+                            </td>
+                            <td class="small text-muted mono-font">${ run.date.split(' ')[1] } <span style="font-size:0.7em">${ run.date.split(' ')[0] }</span></td>
+                            <td class="mono-font">${ run.lf }</td>
+                            <td class="mono-font">${ run.rf }</td>
+                            <td class="mono-font">${ run.lr }</td>
+                            <td class="mono-font">${ run.rr }</td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">${ run.cross_pct }%</span></td>
+                            <td class="small fw-bold">${ run.fuel_lbs }</td>
+                            <td class="small text-muted text-truncate" style="max-width: 150px;">${ run.adjustment_notes }</td>
+                            <td class="text-end pe-4">
+                                <a :href="'/delete/'+selectedCar+'/'+run.scale_num" class="text-muted hover-danger" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 table-history">
-                <thead class="bg-light">
-                    <tr><th class="ps-4">Sel</th><th>User</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr>
-                </thead>
-                <tbody>
-                    {% for run in history|reverse %}
-                    <tr class="{{ 'baseline-row' if run.is_baseline == 'Yes' }}">
-                        <td class="ps-4"><input type="checkbox" class="form-check-input compare-check" data-run='{{ run|tojson|safe }}' onchange="toggleCompare()"></td>
-                        <td><span class="badge bg-secondary text-white small" style="font-size:0.65rem;">{{ run.created_by|default('Unk') }}</span></td>
-                        <td><span class="clickable-run" data-run='{{ run|tojson|safe }}' onclick="showPopUp(this)">#{{ run.scale_num }}</span>{% if run.is_baseline == 'Yes' %}<i class="fa-solid fa-star text-success ms-1" style="font-size: 0.6rem;"></i>{% endif %}</td>
-                        <td class="small text-muted">{{ run.date }}</td>
-                        <td>{{ run.lf }} <span class="text-muted small">({{ run.t_lf }})</span></td>
-                        <td>{{ run.rf }} <span class="text-muted small">({{ run.t_rf }})</span></td>
-                        <td>{{ run.lr }} <span class="text-muted small">({{ run.t_lr }})</span></td>
-                        <td>{{ run.rr }} <span class="text-muted small">({{ run.t_rr }})</span></td>
-                        <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ run.cross_pct }}%</span></td>
-                        <td class="small fw-bold">{{ run.fuel_lbs }}</td>
-                        <td class="small text-muted">{{ run.sway_bar }}</td>
-                        <td class="text-end pe-4"><a href="/delete/{{ selected_car }}/{{ run.scale_num }}" class="text-muted hover-danger" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    </div>
+    
+    <button id="compareBtn" class="btn btn-dark" style="display:none;"><i class="fa-solid fa-scale-balanced me-2"></i>Compare (2)</button>
+
+    <div class="modal fade" id="vueModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">${ modalTitle }</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" v-html="modalContent"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<button id="compareBtn" class="btn btn-dark" onclick="compareRuns()"><i class="fa-solid fa-scale-balanced me-2"></i>Compare (2)</button>
+<script>
+    // Inject server data into global window object for Vue to consume
+    window.SERVER_DATA = {
+        selectedCar: "{{ selected_car }}",
+        currentUser: "{{ current_user }}",
+        nextNum: {{ next_num }},
+        history: {{ history|tojson|safe }},
+        // Use simplified JSON injection to prevent syntax errors
+        lastRun: {{ last_run|tojson|safe }},
+        baselineRun: {{ baseline_run|tojson|safe }}
+    };
+</script>
 
-<div class="modal fade" id="mainModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title fw-bold" id="modalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4" id="modalBody"></div></div></div></div>
+<script>
+    const { createApp, ref, computed, reactive, onMounted, watch } = Vue;
+
+    createApp({
+        delimiters: ['${', '}'], // Avoid conflict with Jinja2
+        setup() {
+            // Data
+            const selectedCar = ref(window.SERVER_DATA.selectedCar);
+            const currentUser = ref(window.SERVER_DATA.currentUser);
+            const nextNum = ref(window.SERVER_DATA.nextNum);
+            const history = ref(window.SERVER_DATA.history);
+            const lastRun = ref(window.SERVER_DATA.lastRun);
+            const baselineRun = ref(window.SERVER_DATA.baselineRun);
+            
+            const selectedCarInput = ref(selectedCar.value);
+
+            // Inputs
+            const weights = reactive({ lf: '', rf: '', lr: '', rr: '' });
+            const fuelInput = ref('');
+            const fuelUnit = ref('gal');
+            
+            // Turn Options (-4 to +4)
+            const turnOptions = [];
+            for (let i = -16; i <= 16; i++) { turnOptions.push(i/4); }
+
+            // Predictor State
+            const predMode = ref('cross');
+            const targetCross = ref('');
+            const targetCorner = ref('lf');
+            const targetCornerWeight = ref('');
+            
+            // Reverse State
+            const revTarget = reactive({ left: 50, rear: 50, cross: 50 });
+
+            // --- COMPUTED: Effective Weights (Live vs Ghost) ---
+            const usingGhostData = computed(() => {
+                // If any input has data, we are LIVE. If all empty, we are GHOST.
+                return !(weights.lf || weights.rf || weights.lr || weights.rr) && lastRun.value;
+            });
+
+            const effectiveWeights = computed(() => {
+                if (usingGhostData.value) {
+                    return {
+                        lf: parseFloat(lastRun.value.lf), rf: parseFloat(lastRun.value.rf),
+                        lr: parseFloat(lastRun.value.lr), rr: parseFloat(lastRun.value.rr)
+                    };
+                }
+                return {
+                    lf: parseFloat(weights.lf) || 0, rf: parseFloat(weights.rf) || 0,
+                    lr: parseFloat(weights.lr) || 0, rr: parseFloat(weights.rr) || 0
+                };
+            });
+
+            const effectiveStats = computed(() => {
+                const w = effectiveWeights.value;
+                const t = w.lf + w.rf + w.lr + w.rr;
+                if (t === 0) return { total: 0, cross: 0, left: 0, rear: 0 };
+                return {
+                    total: t,
+                    cross: ((w.rf + w.lr) / t) * 100,
+                    left: ((w.lf + w.lr) / t) * 100,
+                    rear: ((w.lr + w.rr) / t) * 100
+                };
+            });
+
+            // --- COMPUTED: Predictors ---
+            
+            // 1. Turn Predictor
+            const hasTurnData = computed(() => {
+                return lastRun.value && parseFloat(lastRun.value.wt_per_turn) !== 0;
+            });
+
+            const turnPredictionResult = computed(() => {
+                if (!hasTurnData.value || effectiveStats.value.total === 0 || !targetCross.value) return '--';
+                const rate = parseFloat(lastRun.value.wt_per_turn);
+                const diff = (targetCross.value - effectiveStats.value.cross) / rate;
+                return `${diff > 0 ? 'RAISE' : 'LOWER'} ${Math.abs(diff).toFixed(2)} turns`;
+            });
+
+            const cornerPredictionResult = computed(() => {
+                if (!hasTurnData.value || effectiveStats.value.total === 0 || !targetCornerWeight.value) return '--';
+                const rate = parseFloat(lastRun.value.wt_per_turn); // % per turn
+                const lbsPerTurn = effectiveStats.value.total * (Math.abs(rate) / 100);
+                
+                const curW = effectiveWeights.value[targetCorner.value];
+                const diff = (targetCornerWeight.value - curW) / lbsPerTurn;
+                return `${diff > 0 ? 'RAISE' : 'LOWER'} ${Math.abs(diff).toFixed(2)} turns`;
+            });
+
+            // 2. Fuel Predictor
+            const fuelPred = computed(() => {
+                const val = parseFloat(fuelInput.value);
+                if (!val || effectiveStats.value.total === 0) return { lf:'-', rf:'-', lr:'-', rr:'-', cross:'-' };
+                
+                let add = val;
+                if (fuelUnit.value === 'gal') add = val * 6.2;
+                
+                const w = effectiveWeights.value;
+                const nLR = w.lr + (add / 2);
+                const nRR = w.rr + (add / 2);
+                const nTotal = effectiveStats.value.total + add;
+                
+                return {
+                    lf: w.lf.toFixed(1), rf: w.rf.toFixed(1),
+                    lr: nLR.toFixed(1), rr: nRR.toFixed(1),
+                    cross: (((w.rf + nLR) / nTotal) * 100).toFixed(2)
+                };
+            });
+
+            // 3. Reverse Calc
+            const reverseResults = computed(() => {
+                const T = effectiveStats.value.total;
+                if (T === 0) return {};
+                
+                const L = revTarget.left / 100;
+                const R = revTarget.rear / 100;
+                const C = revTarget.cross / 100;
+
+                const lM = T * L;
+                const rM = T * R;
+                const cM = T * C;
+
+                const lr = (lM + rM + cM - T) / 2;
+                const rr = rM - lr;
+                const lf = lM - lr;
+                const rf = T - lf - lr - rr;
+
+                const res = { lf, rf, lr, rr };
+                const out = {};
+                for (const k in res) {
+                    out[k] = {
+                        target: res[k].toFixed(0),
+                        diff: (res[k] - effectiveWeights.value[k]).toFixed(0)
+                    };
+                }
+                return out;
+            });
+
+            // --- CHART.JS INTEGRATION ---
+            let chartInstance = null;
+
+            function updateChart() {
+                const ctx = document.getElementById('cogChart');
+                if (!ctx) return;
+
+                // Map percentages (40-60%) to 0-100 chart space
+                const map = (v) => Math.max(0, Math.min(100, (v - 40) * 5));
+                
+                const currentData = {
+                    x: map(effectiveStats.value.left),
+                    y: map(effectiveStats.value.rear)
+                };
+                
+                const baseData = baselineRun.value ? {
+                    x: map(baselineRun.value.left_pct),
+                    y: map(baselineRun.value.rear_pct)
+                } : null;
+
+                if (chartInstance) {
+                    chartInstance.data.datasets[0].data = [currentData];
+                    if(baseData) chartInstance.data.datasets[1].data = [baseData];
+                    chartInstance.update();
+                    return;
+                }
+
+                chartInstance = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Current',
+                                data: [currentData],
+                                backgroundColor: '#dc2626',
+                                pointRadius: 8,
+                                pointHoverRadius: 10
+                            },
+                            {
+                                label: 'Baseline',
+                                data: baseData ? [baseData] : [],
+                                backgroundColor: '#22c55e',
+                                pointRadius: 8,
+                                pointStyle: 'triangle'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { min: 0, max: 100, title: {display:true, text:'Left %'}, grid: {color:'#e2e8f0'} },
+                            y: { min: 0, max: 100, title: {display:true, text:'Rear %'}, grid: {color:'#e2e8f0'} }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false } // clean look
+                        }
+                    }
+                });
+            }
+
+            // Watch for stats changes to update chart
+            watch(effectiveStats, () => {
+                updateChart();
+            });
+            
+            onMounted(() => {
+                updateChart();
+            });
+
+            // --- METHODS ---
+            function loadCar() {
+                if (selectedCarInput.value) window.location.href = `/?car_num=${encodeURIComponent(selectedCarInput.value)}`;
+            }
+            
+            // Modal Logic
+            const modalTitle = ref('');
+            const modalContent = ref('');
+            let bsModal = null;
+
+            function showRunDetails(run) {
+                modalTitle.value = `Run #${run.scale_num}`;
+                modalContent.value = `
+                    <div class="row text-center mb-3">
+                        <div class="col-6"><div class="p-2 border bg-light rounded">LF: <b>${run.lf}</b><br><small class="text-muted">${run.t_lf}t | ${run.p_lf}psi</small></div></div>
+                        <div class="col-6"><div class="p-2 border bg-light rounded">RF: <b>${run.rf}</b><br><small class="text-muted">${run.t_rf}t | ${run.p_rf}psi</small></div></div>
+                    </div>
+                    <div class="text-center fw-bold py-1">TOTAL: ${run.total}</div>
+                    <div class="row text-center mb-4">
+                        <div class="col-6"><div class="p-2 border bg-light rounded">LR: <b>${run.lr}</b><br><small class="text-muted">${run.t_lr}t | ${run.p_lr}psi</small></div></div>
+                        <div class="col-6"><div class="p-2 border bg-light rounded">RR: <b>${run.rr}</b><br><small class="text-muted">${run.t_rr}t | ${run.p_rr}psi</small></div></div>
+                    </div>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between"><span>Cross</span><b>${run.cross_pct}%</b></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Fuel</span><b>${run.fuel_lbs} lbs</b></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Bar</span><b>${run.sway_bar}</b></li>
+                    </ul>
+                    <div class="p-3 bg-light rounded mt-3 small fst-italic">${run.adjustment_notes || 'No notes'}</div>
+                    <div class="mt-2 text-end text-muted small">Recorded by: <b>${run.created_by || 'Unknown'}</b></div>
+                `;
+                if(!bsModal) bsModal = new bootstrap.Modal(document.getElementById('vueModal'));
+                bsModal.show();
+            }
+
+            return {
+                // State
+                selectedCar, currentUser, nextNum, history, lastRun, baselineRun,
+                selectedCarInput, weights, fuelInput, fuelUnit, turnOptions,
+                predMode, targetCross, targetCorner, targetCornerWeight,
+                revTarget,
+                
+                // Computed
+                usingGhostData, effectiveStats, effectiveWeights,
+                hasTurnData, turnPredictionResult, cornerPredictionResult,
+                fuelPred, reverseResults,
+                
+                // Methods
+                loadCar, showRunDetails,
+                modalTitle, modalContent
+            };
+        }
+    }).mount('#app');
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // 1. UI Logic
-    function switchCar() { const c=document.getElementById('carInput').value.trim(); if(c) window.location.href=`/?car_num=${encodeURIComponent(c)}`; }
-    document.getElementById('carInput').addEventListener('input', function(){ document.getElementById('formCarNum').value=this.value; });
-    function clearTurns() { document.querySelectorAll('.turn-input').forEach(e => e.selectedIndex = 0); }
-    function toggleTools() { const t=document.getElementById('toolsCol'), i=document.getElementById('inputCol'); if(t.classList.contains('d-none')) { t.classList.remove('d-none'); i.classList.remove('col-lg-12'); i.classList.add('col-lg-8'); } else { t.classList.add('d-none'); i.classList.remove('col-lg-8'); i.classList.add('col-lg-12'); } }
-
-    // 2. Data & CoG
-    const wIds = ['lf','rf','lr','rr'];
-    const lastRun = {{ last_run|tojson|safe }};
-    
-    let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
-    const baseL = parseFloat("{{ baseline_run.left_pct if baseline_run else 0 }}");
-    const baseR = parseFloat("{{ baseline_run.rear_pct if baseline_run else 0 }}");
-
-    function updateLive() {
-        let inputTotal = 0;
-        let inputW = {lf:0, rf:0, lr:0, rr:0, t:0};
-        wIds.forEach(k => { 
-            const v = parseFloat(document.getElementById(k).value) || 0; 
-            inputW[k] = v; 
-            inputTotal += v; 
-        });
-
-        const totalDisplay = document.getElementById('live-total');
-        const sourceLabel = document.getElementById('source-label');
-
-        if (inputTotal > 0) {
-            curW = {...inputW, t: inputTotal};
-            totalDisplay.innerText = inputTotal.toFixed(1);
-            totalDisplay.classList.remove('text-muted');
-            sourceLabel.style.display = 'none';
-        } else if (lastRun) {
-            curW = {
-                lf: parseFloat(lastRun.lf), 
-                rf: parseFloat(lastRun.rf), 
-                lr: parseFloat(lastRun.lr), 
-                rr: parseFloat(lastRun.rr),
-                t: parseFloat(lastRun.total)
-            };
-            totalDisplay.innerText = curW.t.toFixed(1);
-            totalDisplay.classList.add('text-muted');
-            sourceLabel.style.display = 'block';
-        } else {
-            curW = {lf:0, rf:0, lr:0, rr:0, t:0};
-            totalDisplay.innerText = "0";
-            sourceLabel.style.display = 'none';
-        }
-
-        if(curW.t > 0) {
-            const cP = ((curW.rf+curW.lr)/curW.t)*100; 
-            const lP = ((curW.lf+curW.lr)/curW.t)*100; 
-            const rP = ((curW.lr+curW.rr)/curW.t)*100;
-            document.getElementById('live-cross').innerText = cP.toFixed(2)+'%';
-            document.getElementById('live-left').innerText = lP.toFixed(1)+'%';
-            document.getElementById('live-rear').innerText = rP.toFixed(1)+'%';
-            updateCoG(lP, rP);
-        } else {
-            document.getElementById('live-cross').innerText = "0.00%";
-        }
-
-        calcCrossPred(); calcCornerPred();
-        if(document.getElementById('fuelTargetInput').value) calcFuel();
-    }
-    
-    window.addEventListener('load', updateLive);
-    wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
-
-    function updateCoG(lP, rP) {
-        function map(v) { return Math.max(0, Math.min(100, (v - 40) * 5)); }
-        const dot = document.getElementById('cogCur');
-        dot.style.display = 'block';
-        dot.style.left = map(lP) + '%'; dot.style.top = map(rP) + '%';
-        if(baseL > 0) { const b = document.getElementById('cogBase'); b.style.display = 'block'; b.style.left = map(baseL) + '%'; b.style.top = map(baseR) + '%'; }
-    }
-
-    // 3. Calculators
-    function calcReverse() {
-        const errEl = document.getElementById('revError');
-        const resEl = document.getElementById('revResults');
-        errEl.classList.add('d-none');
-        resEl.classList.add('d-none');
-
-        const L=parseFloat(document.getElementById('revLeft').value)/100;
-        const R=parseFloat(document.getElementById('revRear').value)/100;
-        const C=parseFloat(document.getElementById('revCross').value)/100;
-        const T=curW.t;
-
-        if (!T || T === 0) {
-            errEl.innerText = "Error: No weight data available (Inputs or Last Run).";
-            errEl.classList.remove('d-none');
-            return;
-        }
-
-        if (isNaN(L) || isNaN(R) || isNaN(C)) {
-            errEl.innerText = "Error: Please enter values for Left, Rear, and Cross percentages.";
-            errEl.classList.remove('d-none');
-            return;
-        }
-
-        const lM=T*L, rM=T*R, cM=T*C, lr=(lM+rM+cM-T)/2, rr=rM-lr, lf=lM-lr, rf=T-lf-lr-rr;
-        const tgt = {lf,rf,lr,rr};
-        ['lf','rf','lr','rr'].forEach(k => {
-            const v=tgt[k], d=v-curW[k];
-            document.getElementById('out'+k.toUpperCase()).innerText=v.toFixed(0);
-            const el=document.getElementById('diff'+k.toUpperCase());
-            el.innerText=d>0?` (+${d.toFixed(0)})`:` (${d.toFixed(0)})`;
-            el.className=d>0?"rev-delta text-danger":"rev-delta text-primary";
-        });
-        
-        resEl.classList.remove('d-none');
-    }
-
-    const sensRate = parseFloat("{{ last_run.wt_per_turn if last_run and last_run.wt_per_turn else 0 }}") || 0;
-    function calcCrossPred() {
-        const target = parseFloat(document.getElementById('targetCross').value);
-        if(!target || sensRate === 0 || curW.t===0) { document.getElementById('recCross').innerText = "--"; return; }
-        const cur = ((curW.rf + curW.lr) / curW.t) * 100;
-        const t = (target - cur) / sensRate;
-        document.getElementById('recCross').innerText = `${t>0?"Raise":"Lower"} RF/LR ${Math.abs(t).toFixed(2)} turns`;
-    }
-    const tc = document.getElementById('targetCross'); if(tc) tc.addEventListener('input', calcCrossPred);
-
-    function calcCornerPred() {
-        const c = document.getElementById('targetCornerSelect').value, target = parseFloat(document.getElementById('targetWeight').value);
-        if(!target || curW.t===0 || sensRate===0) { document.getElementById('recCorner').innerText = "--"; return; }
-        const lbsPerTurn = curW.t * (Math.abs(sensRate)/100);
-        const t = (target - curW[c]) / lbsPerTurn;
-        document.getElementById('recCorner').innerText = `${t>0?"Raise":"Lower"} ${c.toUpperCase()} ${Math.abs(t).toFixed(2)} turns`;
-    }
-    const tw=document.getElementById('targetWeight'), ts=document.getElementById('targetCornerSelect'); if(tw){ tw.addEventListener('input', calcCornerPred); ts.addEventListener('change', calcCornerPred); }
-
-    const fuelIn = document.getElementById('fuelTargetInput'), fuelUnit = document.getElementById('fuelTargetUnit');
-    if(fuelIn) {
-        function calcFuel() {
-            const val = parseFloat(fuelIn.value);
-            if(isNaN(val) || val === 0 || curW.t === 0) {
-                document.getElementById('fuelResults').classList.add('d-none');
-                document.getElementById('fuelHint').classList.remove('d-none');
-                return;
-            }
-            let fuelWt = val;
-            if(fuelUnit.value === 'gal') fuelWt = val * 6.2;
-            const halfFuel = fuelWt / 2;
-            const nLF = curW.lf;
-            const nRF = curW.rf;
-            const nLR = curW.lr + halfFuel;
-            const nRR = curW.rr + halfFuel;
-            const nTotal = curW.t + fuelWt;
-            const nCross = ((nRF + nLR) / nTotal) * 100;
-            document.getElementById('pLF').innerText = nLF.toFixed(1);
-            document.getElementById('pRF').innerText = nRF.toFixed(1);
-            document.getElementById('pLR').innerText = nLR.toFixed(1);
-            document.getElementById('pRR').innerText = nRR.toFixed(1);
-            document.getElementById('pCross').innerText = nCross.toFixed(2) + '%';
-            document.getElementById('fuelResults').classList.remove('d-none');
-            document.getElementById('fuelHint').classList.add('d-none');
-        }
-        fuelIn.addEventListener('input', calcFuel); 
-        fuelUnit.addEventListener('change', calcFuel);
-    }
-
-    function toggleCompare() { document.getElementById('compareBtn').style.display = (document.querySelectorAll('.compare-check:checked').length===2)?'block':'none'; }
-    function showPopUp(el) {
-        const r=JSON.parse(el.getAttribute('data-run'));
-        document.getElementById('modalTitle').innerText=`Run #${r.scale_num}`;
-        document.getElementById('modalBody').innerHTML=`
-        <div class="row text-center mb-3"><div class="col-6"><div class="p-2 border bg-light rounded">LF: <b>${r.lf}</b><br><small class="text-warning">${r.t_lf}t</small> | <small class="text-primary">${r.p_lf}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RF: <b>${r.rf}</b><br><small class="text-warning">${r.t_rf}t</small> | <small class="text-primary">${r.p_rf}psi</small></div></div></div>
-        <div class="text-center fw-bold py-1">TOTAL: ${r.total}</div>
-        <div class="row text-center mb-4"><div class="col-6"><div class="p-2 border bg-light rounded">LR: <b>${r.lr}</b><br><small class="text-warning">${r.t_lr}t</small> | <small class="text-primary">${r.p_lr}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RR: <b>${r.rr}</b><br><small class="text-warning">${r.t_rr}t</small> | <small class="text-primary">${r.p_rr}psi</small></div></div></div>
-        <ul class="list-group"><li class="list-group-item d-flex justify-content-between"><span>Cross</span><b>${r.cross_pct}%</b></li><li class="list-group-item d-flex justify-content-between"><span>Fuel</span><b>${r.fuel_lbs} lbs</b></li><li class="list-group-item d-flex justify-content-between"><span>Bar</span><b>${r.sway_bar}</b></li></ul>
-        <div class="p-3 bg-light rounded mt-3 small">${r.adjustment_notes||'No notes'}</div>
-        <div class="mt-2 text-end text-muted small">Recorded by: <b>${r.created_by || 'Unknown'}</b></div>`;
-        new bootstrap.Modal(document.getElementById('mainModal')).show();
-    }
-    function compareRuns() {
-        const s = Array.from(document.querySelectorAll('.compare-check:checked')).map(c=>JSON.parse(c.getAttribute('data-run')));
-        s.sort((a,b)=>parseInt(a.scale_num)-parseInt(b.scale_num));
-        const r1=s[0], r2=s[1];
-        document.getElementById('modalTitle').innerText=`Compare #${r1.scale_num} vs #${r2.scale_num}`;
-        let h=`<div class="row text-center fw-bold border-bottom pb-2 mb-2"><div class="col-4">#${r1.scale_num}</div><div class="col-4">Metric</div><div class="col-4">#${r2.scale_num}</div></div>`;
-        [['lf','LF'],['rf','RF'],['lr','LR'],['rr','RR'],['total','Total'],['cross_pct','Cross%'],['fuel_lbs','Fuel(lbs)']].forEach(([k,l])=>{
-            let v1=parseFloat(r1[k])||0, v2=parseFloat(r2[k])||0, d=(v2-v1).toFixed(2);
-            let c=d>0?'diff-pos':(d<0?'diff-neg':'text-muted');
-            h+=`<div class="row text-center py-2 border-bottom"><div class="col-4">${v1}</div><div class="col-4"><b>${l}</b><br><small class="${c}">${d>0?'+':''}${d}</small></div><div class="col-4">${v2}</div></div>`;
-        });
-        document.getElementById('modalBody').innerHTML=h;
-        new bootstrap.Modal(document.getElementById('mainModal')).show();
-    }
-</script>
 </body>
 </html>
