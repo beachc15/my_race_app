@@ -7,89 +7,38 @@
     
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <style>
-        :root { 
-            --bg-body: #f1f5f9; 
-            --primary: #2563eb; 
-            --primary-dark: #1e40af;
-            --text-dark: #0f172a; 
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-        }
-        
+        :root { --bg-body: #f1f5f9; --primary: #2563eb; --primary-dark: #1e40af; --text-dark: #0f172a; --text-muted: #64748b; --border-color: #e2e8f0; }
         body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; color: var(--text-dark); -webkit-font-smoothing: antialiased; }
-        
-        /* Card Styling */
-        .app-card { 
-            background: white; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
-            border: 1px solid var(--border-color); 
-            padding: 24px; 
-            margin-bottom: 24px; 
-            transition: transform 0.2s ease;
-        }
-        
-        /* Typography */
-        h1, h2, h3, h4, h5, h6 { letter-spacing: -0.025em; font-weight: 700; color: #1e293b; }
-        .label-small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; }
-        .mono-font { font-family: 'JetBrains Mono', monospace; }
-
-        /* Professional Inputs */
-        .weight-input { 
-            font-size: 1.8rem; font-weight: 800; text-align: center; color: #334155;
-            border: 2px solid #e2e8f0; border-radius: 12px 12px 0 0; 
-            background: #f8fafc; height: 70px; z-index: 2; transition: all 0.2s;
-        }
+        .app-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); padding: 24px; margin-bottom: 24px; }
+        .weight-input { font-size: 1.8rem; font-weight: 800; text-align: center; color: #334155; border: 2px solid #e2e8f0; border-radius: 12px 12px 0 0; background: #f8fafc; height: 70px; z-index: 2; transition: all 0.2s; }
         .weight-input:focus { background: white; border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
-        .weight-input::placeholder { color: #cbd5e1; }
-
         .sub-input-group { display: flex; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
-        .turn-input, .psi-input {
-            width: 50%; border: 2px solid #e2e8f0; border-top: none; 
-            text-align: center; font-size: 0.85rem; font-weight: 600; padding: 8px;
-            appearance: none; -webkit-appearance: none; cursor: pointer;
-        }
+        .turn-input, .psi-input { width: 50%; border: 2px solid #e2e8f0; border-top: none; text-align: center; font-size: 0.85rem; font-weight: 600; padding: 8px; appearance: none; -webkit-appearance: none; cursor: pointer; }
         .turn-input { border-radius: 0 0 0 12px; background: #fff7ed; color: #ea580c; border-right: 1px solid #e2e8f0; }
         .psi-input { border-radius: 0 0 12px 0; background: #eff6ff; color: #2563eb; border-left: 1px solid #e2e8f0; }
-
-        /* Metrics */
         .metric-card { background: white; border-radius: 12px; padding: 12px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
         .metric-value { font-size: 1.25rem; font-weight: 800; color: #334155; }
-        
-        /* Prediction Boxes */
         .pred-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 8px; text-align: center; }
         .pred-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #be123c; }
-
-        /* Table */
         .table-history th { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
         .table-history td { font-size: 0.9rem; vertical-align: middle; }
         .baseline-row { background-color: #ecfdf5 !important; }
-        
-        /* Utilities */
         .ghost-data { color: #94a3b8 !important; }
         .ghost-badge { background: #f1f5f9; color: #64748b; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; display: inline-block; margin-top: 4px; }
+        .fab-compare { position: fixed; bottom: 30px; right: 30px; z-index: 1050; border-radius: 50px; padding: 12px 28px; font-weight: 700; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); background: #1e293b; color: white; border: none; transition: all 0.2s; }
+        .label-small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+        .diff-pos { color: #dc2626; font-weight: 700; }
+        .diff-neg { color: #2563eb; font-weight: 700; }
         
-        /* Floating Action Button for Compare */
-        .fab-compare { 
-            position: fixed; bottom: 30px; right: 30px; z-index: 1050; 
-            border-radius: 50px; padding: 12px 28px; font-weight: 700; 
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); 
-            background: #1e293b; color: white; border: none;
-            transition: all 0.2s;
-        }
-        .fab-compare:hover { transform: translateY(-2px); background: #0f172a; box-shadow: 0 15px 20px -3px rgba(0,0,0,0.3); }
-        
-        /* Diff Colors */
-        .diff-pos { color: #dc2626; font-weight: 700; } /* Heavier/More */
-        .diff-neg { color: #2563eb; font-weight: 700; } /* Lighter/Less */
-        .diff-neu { color: #94a3b8; }
+        /* Edit Mode Styles */
+        .editing-mode .app-card { border-color: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+        .btn-update { background-color: #d97706; border-color: #d97706; color: white; }
     </style>
 </head>
 <body>
@@ -164,9 +113,11 @@
             </div>
         </div>
 
-        <form action="/submit" method="POST" ref="mainForm">
+        <form :action="isEditing ? '/update' : '/submit'" method="POST" ref="mainForm" :class="{'editing-mode': isEditing}">
             <input type="hidden" name="car_num" :value="selectedCar">
-            <input type="hidden" name="scale_num" :value="nextNum">
+            
+            <input type="hidden" name="scale_num" :value="isEditing ? editingId : nextNum">
+            
             <input type="hidden" v-for="key in ['lf','rf','lr','rr']" :name="key" :value="weights[key]">
 
             <div class="row g-4">
@@ -174,11 +125,14 @@
                     <div class="app-card">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div class="d-flex align-items-center gap-3">
-                                <h5 class="mb-0 fw-bold">Scale Drop #${ nextNum }</h5>
-                                <span v-if="usingGhostData" class="badge bg-warning text-dark"><i class="fa-solid fa-ghost me-1"></i> PRE-FILL ACTIVE</span>
+                                <h5 class="mb-0 fw-bold" :class="{'text-warning': isEditing}">
+                                    ${ isEditing ? 'Editing Run #' + editingId : 'Scale Drop #' + nextNum }
+                                </h5>
+                                <span v-if="usingGhostData && !isEditing" class="badge bg-warning text-dark"><i class="fa-solid fa-ghost me-1"></i> PRE-FILL ACTIVE</span>
+                                <span v-if="isEditing" class="badge bg-danger text-white"><i class="fa-solid fa-pen-to-square me-1"></i> EDIT MODE</span>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_baseline" id="baseCheck">
+                                <input class="form-check-input" type="checkbox" name="is_baseline" id="baseCheck" v-model="isBaseline">
                                 <label class="form-check-label label-small mb-0 text-success cursor-pointer" for="baseCheck">SET BASELINE</label>
                             </div>
                         </div>
@@ -188,8 +142,8 @@
                                 <label class="label-small text-center">LF</label>
                                 <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.lf" class="form-control weight-input" placeholder="0">
                                 <div class="sub-input-group">
-                                    <select name="t_lf" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
-                                    <input type="number" step="0.1" inputmode="decimal" name="p_lf" class="psi-input" placeholder="Psi">
+                                    <select name="t_lf" v-model="turns.lf" class="turn-input"><option value="" disabled>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_lf" v-model="psi.lf" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                             <div class="col-2 text-center pb-4">
@@ -202,8 +156,8 @@
                                 <label class="label-small text-center">RF</label>
                                 <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.rf" class="form-control weight-input" placeholder="0">
                                 <div class="sub-input-group">
-                                    <select name="t_rf" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
-                                    <input type="number" step="0.1" inputmode="decimal" name="p_rf" class="psi-input" placeholder="Psi">
+                                    <select name="t_rf" v-model="turns.rf" class="turn-input"><option value="" disabled>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_rf" v-model="psi.rf" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                         </div>
@@ -219,8 +173,8 @@
                                 <label class="label-small text-center">LR</label>
                                 <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.lr" class="form-control weight-input" placeholder="0">
                                 <div class="sub-input-group">
-                                    <select name="t_lr" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
-                                    <input type="number" step="0.1" inputmode="decimal" name="p_lr" class="psi-input" placeholder="Psi">
+                                    <select name="t_lr" v-model="turns.lr" class="turn-input"><option value="" disabled>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_lr" v-model="psi.lr" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                             <div class="col-2"></div>
@@ -228,8 +182,8 @@
                                 <label class="label-small text-center">RR</label>
                                 <input type="number" step="0.1" inputmode="decimal" v-model.number="weights.rr" class="form-control weight-input" placeholder="0">
                                 <div class="sub-input-group">
-                                    <select name="t_rr" class="turn-input"><option value="" disabled selected>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
-                                    <input type="number" step="0.1" inputmode="decimal" name="p_rr" class="psi-input" placeholder="Psi">
+                                    <select name="t_rr" v-model="turns.rr" class="turn-input"><option value="" disabled>Turn</option><option v-for="t in turnOptions" :value="t">${t}</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="p_rr" v-model="psi.rr" class="psi-input" placeholder="Psi">
                                 </div>
                             </div>
                         </div>
@@ -241,19 +195,25 @@
                             <div class="col-md-6">
                                 <label class="label-small">FUEL ADDED</label>
                                 <div class="input-group">
-                                    <input type="number" step="0.1" inputmode="decimal" name="fuel_input" class="form-control fw-bold" placeholder="0.0">
-                                    <select name="fuel_unit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                                    <input type="number" step="0.1" inputmode="decimal" name="fuel_input" v-model="fuelInput" class="form-control fw-bold" placeholder="0.0">
+                                    <select name="fuel_unit" v-model="fuelUnit" class="form-select bg-light fw-bold" style="max-width: 90px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="label-small">SWAY BAR</label>
-                                <select name="sway_bar" class="form-select fw-bold text-secondary"><option value="Disconnected">Disconnected</option><option value="Neutral">Neutral</option><option value="Preloaded">Preloaded</option></select>
+                                <select name="sway_bar" v-model="swayBar" class="form-select fw-bold text-secondary"><option value="Disconnected">Disconnected</option><option value="Neutral">Neutral</option><option value="Preloaded">Preloaded</option></select>
                             </div>
                         </div>
                         <label class="label-small">NOTES</label>
-                        <textarea name="adjustment_notes" class="form-control mb-3 bg-light" rows="2" placeholder="Describe changes..."></textarea>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-sm">SAVE RUN</button>
+                        <textarea name="adjustment_notes" v-model="notes" class="form-control mb-3 bg-light" rows="2" placeholder="Describe changes..."></textarea>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button type="button" v-if="isEditing" @click="cancelEdit" class="btn btn-outline-secondary btn-sm fw-bold">Cancel Edit</button>
+                            <div v-else></div>
+                            
+                            <button type="submit" class="btn px-5 py-2 fw-bold shadow-sm" :class="isEditing ? 'btn-update' : 'btn-primary'">
+                                ${ isEditing ? 'UPDATE RUN' : 'SAVE RUN' }
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -363,6 +323,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4" v-html="modalContent"></div>
+                <div class="modal-footer border-top-0 pt-0" v-if="modalAction">
+                    <button class="btn btn-warning w-100 fw-bold" @click="triggerEdit">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>EDIT THIS RUN
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -394,9 +359,20 @@
             
             const selectedCarInput = ref(selectedCar.value);
             const weights = reactive({ lf: '', rf: '', lr: '', rr: '' });
+            const turns = reactive({ lf: '', rf: '', lr: '', rr: '' });
+            const psi = reactive({ lf: '', rf: '', lr: '', rr: '' });
+            
             const fuelInput = ref('');
             const fuelUnit = ref('gal');
+            const swayBar = ref('Disconnected');
+            const notes = ref('');
+            const isBaseline = ref(false);
             
+            // Edit Mode State
+            const isEditing = ref(false);
+            const editingId = ref(null);
+            const runToEdit = ref(null); // Temp store for modal
+
             const turnOptions = [];
             for (let i = -16; i <= 16; i++) { turnOptions.push(i/4); }
 
@@ -404,14 +380,11 @@
             const targetCross = ref('');
             const targetCorner = ref('lf');
             const targetCornerWeight = ref('');
-            
             const revTarget = reactive({ left: 50, rear: 50, cross: 50 });
-            
-            // Comparison State
             const selectedRuns = ref([]);
 
             // Computed
-            const usingGhostData = computed(() => !(weights.lf || weights.rf || weights.lr || weights.rr) && lastRun.value);
+            const usingGhostData = computed(() => !(weights.lf || weights.rf || weights.lr || weights.rr) && lastRun.value && !isEditing.value);
 
             const effectiveWeights = computed(() => {
                 if (usingGhostData.value) {
@@ -478,12 +451,15 @@
 
             function loadCar() { if (selectedCarInput.value) window.location.href = `/?car_num=${encodeURIComponent(selectedCarInput.value)}`; }
             
-            // Modal Logic
+            // Modal & Edit Logic
             const modalTitle = ref('');
             const modalContent = ref('');
+            const modalAction = ref(false); // Controls footer visibility
             let bsModal = null;
 
             function showRunDetails(run) {
+                runToEdit.value = run; // Store for "Trigger Edit" click
+                modalAction.value = true;
                 modalTitle.value = `Run #${run.scale_num}`;
                 modalContent.value = `
                     <div class="row text-center mb-3"><div class="col-6"><div class="p-2 border bg-light rounded">LF: <b>${run.lf}</b><br><small class="text-muted">${run.t_lf}t | ${run.p_lf}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RF: <b>${run.rf}</b><br><small class="text-muted">${run.t_rf}t | ${run.p_rf}psi</small></div></div></div>
@@ -497,61 +473,65 @@
                 bsModal.show();
             }
 
-            function compareRuns() {
-                // Sort runs by scale_num (Run A is older, Run B is newer)
-                const sorted = selectedRuns.value.slice().sort((a,b) => parseInt(a.scale_num) - parseInt(b.scale_num));
-                const r1 = sorted[0];
-                const r2 = sorted[1];
-
-                modalTitle.value = `Compare Run #${r1.scale_num} vs #${r2.scale_num}`;
+            function triggerEdit() {
+                const r = runToEdit.value;
+                if(!r) return;
                 
-                // Helper to calculate delta and class
+                // Populate Form
+                isEditing.value = true;
+                editingId.value = r.scale_num;
+                
+                weights.lf = r.lf; weights.rf = r.rf; weights.lr = r.lr; weights.rr = r.rr;
+                turns.lf = r.t_lf || ''; turns.rf = r.t_rf || ''; turns.lr = r.t_lr || ''; turns.rr = r.t_rr || '';
+                psi.lf = r.p_lf; psi.rf = r.p_rf; psi.lr = r.p_lr; psi.rr = r.p_rr;
+                
+                fuelInput.value = r.fuel_lbs; // Assuming saved in lbs, unit defaults to gal but that's ok
+                fuelUnit.value = 'lbs'; // Set to lbs since DB stores lbs
+                swayBar.value = r.sway_bar;
+                notes.value = r.adjustment_notes;
+                isBaseline.value = (r.is_baseline === "Yes");
+
+                // Close Modal and scroll up
+                bsModal.hide();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function cancelEdit() {
+                isEditing.value = false;
+                editingId.value = null;
+                // Clear weights to reset to Ghost Data mode
+                weights.lf = ''; weights.rf = ''; weights.lr = ''; weights.rr = '';
+                notes.value = '';
+                // Optional: clear other fields or leave them
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function compareRuns() {
+                modalAction.value = false; // Hide edit button in compare mode
+                const sorted = selectedRuns.value.slice().sort((a,b) => parseInt(a.scale_num) - parseInt(b.scale_num));
+                const r1 = sorted[0]; const r2 = sorted[1];
+                modalTitle.value = `Compare Run #${r1.scale_num} vs #${r2.scale_num}`;
                 const getRow = (label, val1, val2, suffix='') => {
-                    const v1 = parseFloat(val1) || 0;
-                    const v2 = parseFloat(val2) || 0;
-                    const diff = (v2 - v1).toFixed(2);
-                    // Determine Color
-                    let cls = 'diff-neu';
-                    if (diff > 0) cls = 'diff-pos';
-                    if (diff < 0) cls = 'diff-neg';
+                    const v1 = parseFloat(val1) || 0; const v2 = parseFloat(val2) || 0; const diff = (v2 - v1).toFixed(2);
+                    let cls = 'diff-neu'; if (diff > 0) cls = 'diff-pos'; if (diff < 0) cls = 'diff-neg';
                     const sign = diff > 0 ? '+' : '';
                     return `<tr><td class="text-start fw-bold text-muted">${label}</td><td>${v1}${suffix}</td><td>${v2}${suffix}</td><td class="${cls}">${sign}${diff}${suffix}</td></tr>`;
                 };
-
-                modalContent.value = `
-                    <div class="table-responsive">
-                        <table class="table table-bordered text-center align-middle">
-                            <thead class="table-light"><tr><th>Metric</th><th>#${r1.scale_num}</th><th>#${r2.scale_num}</th><th>Δ</th></tr></thead>
-                            <tbody>
-                                ${getRow('LF', r1.lf, r2.lf)}
-                                ${getRow('RF', r1.rf, r2.rf)}
-                                ${getRow('LR', r1.lr, r2.lr)}
-                                ${getRow('RR', r1.rr, r2.rr)}
-                                ${getRow('Total', r1.total, r2.total)}
-                                ${getRow('Cross', r1.cross_pct, r2.cross_pct, '%')}
-                                ${getRow('Fuel', r1.fuel_lbs, r2.fuel_lbs)}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Notes #${r1.scale_num}: ${r1.adjustment_notes || '-'}</span>
-                        <span>Notes #${r2.scale_num}: ${r2.adjustment_notes || '-'}</span>
-                    </div>
-                `;
-                
+                modalContent.value = `<div class="table-responsive"><table class="table table-bordered text-center align-middle"><thead class="table-light"><tr><th>Metric</th><th>#${r1.scale_num}</th><th>#${r2.scale_num}</th><th>Δ</th></tr></thead><tbody>${getRow('LF', r1.lf, r2.lf)}${getRow('RF', r1.rf, r2.rf)}${getRow('LR', r1.lr, r2.lr)}${getRow('RR', r1.rr, r2.rr)}${getRow('Total', r1.total, r2.total)}${getRow('Cross', r1.cross_pct, r2.cross_pct, '%')}${getRow('Fuel', r1.fuel_lbs, r2.fuel_lbs)}</tbody></table></div>`;
                 if(!bsModal) bsModal = new bootstrap.Modal(document.getElementById('vueModal'));
                 bsModal.show();
             }
 
             return {
                 selectedCar, currentUser, nextNum, history, lastRun, baselineRun,
-                selectedCarInput, weights, fuelInput, fuelUnit, turnOptions,
-                predMode, targetCross, targetCorner, targetCornerWeight, revTarget,
+                selectedCarInput, weights, turns, psi, fuelInput, fuelUnit, swayBar, notes, isBaseline,
+                turnOptions, predMode, targetCross, targetCorner, targetCornerWeight, revTarget,
                 usingGhostData, effectiveStats, effectiveWeights, hasTurnData,
                 turnPredictionResult, cornerPredictionResult, fuelPred, reverseResults,
-                loadCar, showRunDetails, modalTitle, modalContent,
-                // New Exports for Compare Logic
-                selectedRuns, compareRuns
+                loadCar, showRunDetails, modalTitle, modalContent, modalAction,
+                selectedRuns, compareRuns,
+                // Edit Exports
+                triggerEdit, cancelEdit, isEditing, editingId
             };
         }
     }).mount('#app');

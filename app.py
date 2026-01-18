@@ -263,6 +263,59 @@ def delete(car_num, scale_num):
     db.commit()
     return redirect(url_for('index', car_num=car_num))
 
+@app.route('/update', methods=['POST'])
+def update():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    
+    car_num = request.form.get('car_num')
+    scale_num = request.form.get('scale_num') # The ID of the run we are editing
+    
+    def get_f(k): return safe_float(request.form.get(k))
+    
+    # 1. Gather Inputs (Same as submit)
+    lf, rf, lr, rr = get_f('lf'), get_f('rf'), get_f('lr'), get_f('rr')
+    t_lf, t_rf, t_lr, t_rr = get_f('t_lf'), get_f('t_rf'), get_f('t_lr'), get_f('t_rr')
+    p_lf, p_rf, p_lr, p_rr = get_f('p_lf'), get_f('p_rf'), get_f('p_lr'), get_f('p_rr')
+    
+    fuel_lbs = get_f('fuel_input') * (FUEL_DENSITY if request.form.get('fuel_unit') == 'gal' else 1)
+    total = lf + rf + lr + rr
+    cross_pct = round(((rf + lr) / total * 100), 2) if total > 0 else 0.0
+    
+    # 2. Recalculate Stats (simplified for update)
+    left_pct = round(((lf + lr) / total * 100), 2) if total else 0
+    rear_pct = round(((lr + rr) / total * 100), 2) if total else 0
+    
+    # 3. Update SQLite
+    db = get_db()
+    query = """
+        UPDATE setups 
+        SET lf=?, rf=?, lr=?, rr=?, 
+            t_lf=?, t_rf=?, t_lr=?, t_rr=?,
+            p_lf=?, p_rf=?, p_lr=?, p_rr=?,
+            total=?, cross_pct=?, left_pct=?, rear_pct=?,
+            fuel_lbs=?, adjustment_notes=?, sway_bar=?,
+            is_baseline=?
+        WHERE car_num=? AND scale_num=?
+    """
+    
+    params = [
+        lf, rf, lr, rr,
+        t_lf, t_rf, t_lr, t_rr,
+        p_lf, p_rf, p_lr, p_rr,
+        total, cross_pct, left_pct, rear_pct,
+        round(fuel_lbs, 1), request.form.get('adjustment_notes', ''),
+        request.form.get('sway_bar', 'Disconnected'),
+        "Yes" if request.form.get('is_baseline') else "No",
+        car_num, scale_num
+    ]
+    
+    db.execute(query, params)
+    db.commit()
+    
+    # We do NOT update the CSV to preserve the raw audit trail of the file
+    
+    return redirect(url_for('index', car_num=car_num))
+
 if __name__ == '__main__':
     # host='0.0.0.0' allows access from other devices
     app.run(debug=True, port=5001, host='0.0.0.0')

@@ -1,5 +1,5 @@
 venv/
 .vscode/
 race_data.db
-race_care_weights.csv
+race_car_weights.csv
 users.txt
