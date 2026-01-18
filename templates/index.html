@@ -32,7 +32,10 @@
 
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
+        <div>
+            <h3 class="fw-bold mb-0">RaceEngineer <span class="badge bg-primary ms-2 align-middle" style="font-size: 0.4em;">PRO</span></h3>
+            <small class="text-muted" style="font-size: 0.7rem;">Logged in as: <b>{{ current_user }}</b> <a href="/logout" class="text-decoration-none ms-1">(Logout)</a></small>
+        </div>
         <div class="d-flex gap-2 align-items-center">
             
             <a href="/download/{{ selected_car }}" class="btn btn-sm btn-success fw-bold text-white shadow-sm">
@@ -265,11 +268,14 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-history">
-                <thead class="bg-light"><tr><th class="ps-4">Sel</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr></thead>
+                <thead class="bg-light">
+                    <tr><th class="ps-4">Sel</th><th>User</th><th>Run</th><th>Date</th><th>LF</th><th>RF</th><th>LR</th><th>RR</th><th>Cross</th><th>Fuel</th><th>Bar</th><th></th></tr>
+                </thead>
                 <tbody>
                     {% for run in history|reverse %}
                     <tr class="{{ 'baseline-row' if run.is_baseline == 'Yes' }}">
                         <td class="ps-4"><input type="checkbox" class="form-check-input compare-check" data-run='{{ run|tojson|safe }}' onchange="toggleCompare()"></td>
+                        <td><span class="badge bg-secondary text-white small" style="font-size:0.65rem;">{{ run.created_by|default('Unk') }}</span></td>
                         <td><span class="clickable-run" data-run='{{ run|tojson|safe }}' onclick="showPopUp(this)">#{{ run.scale_num }}</span>{% if run.is_baseline == 'Yes' %}<i class="fa-solid fa-star text-success ms-1" style="font-size: 0.6rem;"></i>{% endif %}</td>
                         <td class="small text-muted">{{ run.date }}</td>
                         <td>{{ run.lf }} <span class="text-muted small">({{ run.t_lf }})</span></td>
@@ -302,7 +308,6 @@
 
     // 2. Data & CoG
     const wIds = ['lf','rf','lr','rr'];
-    // FIXED LINE BELOW TO REMOVE SYNTAX ERROR
     const lastRun = {{ last_run|tojson|safe }};
     
     let curW = {lf:0, rf:0, lr:0, rr:0, t:0};
@@ -426,7 +431,6 @@
     }
     const tw=document.getElementById('targetWeight'), ts=document.getElementById('targetCornerSelect'); if(tw){ tw.addEventListener('input', calcCornerPred); ts.addEventListener('change', calcCornerPred); }
 
-    // UPDATED FUEL PREDICTOR
     const fuelIn = document.getElementById('fuelTargetInput'), fuelUnit = document.getElementById('fuelTargetUnit');
     if(fuelIn) {
         function calcFuel() {
@@ -457,7 +461,6 @@
         fuelUnit.addEventListener('change', calcFuel);
     }
 
-    // 4. Modal Helpers
     function toggleCompare() { document.getElementById('compareBtn').style.display = (document.querySelectorAll('.compare-check:checked').length===2)?'block':'none'; }
     function showPopUp(el) {
         const r=JSON.parse(el.getAttribute('data-run'));
@@ -467,7 +470,8 @@
         <div class="text-center fw-bold py-1">TOTAL: ${r.total}</div>
         <div class="row text-center mb-4"><div class="col-6"><div class="p-2 border bg-light rounded">LR: <b>${r.lr}</b><br><small class="text-warning">${r.t_lr}t</small> | <small class="text-primary">${r.p_lr}psi</small></div></div><div class="col-6"><div class="p-2 border bg-light rounded">RR: <b>${r.rr}</b><br><small class="text-warning">${r.t_rr}t</small> | <small class="text-primary">${r.p_rr}psi</small></div></div></div>
         <ul class="list-group"><li class="list-group-item d-flex justify-content-between"><span>Cross</span><b>${r.cross_pct}%</b></li><li class="list-group-item d-flex justify-content-between"><span>Fuel</span><b>${r.fuel_lbs} lbs</b></li><li class="list-group-item d-flex justify-content-between"><span>Bar</span><b>${r.sway_bar}</b></li></ul>
-        <div class="p-3 bg-light rounded mt-3 small">${r.adjustment_notes||'No notes'}</div>`;
+        <div class="p-3 bg-light rounded mt-3 small">${r.adjustment_notes||'No notes'}</div>
+        <div class="mt-2 text-end text-muted small">Recorded by: <b>${r.created_by || 'Unknown'}</b></div>`;
         new bootstrap.Modal(document.getElementById('mainModal')).show();
     }
     function compareRuns() {
