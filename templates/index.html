@@ -24,6 +24,7 @@
         .cog-baseline { background: #22c55e; opacity: 0.6; z-index: 1; }
         .rev-result-box { font-size: 0.85rem; background: #f1f5f9; padding: 8px; border-radius: 6px; margin-bottom: 4px; }
         .rev-delta { font-size: 0.8rem; font-weight: 700; }
+        .pred-box { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 4px; font-size: 0.85rem; font-weight: 600; color: #be123c; }
         #compareBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 999; border-radius: 50px; padding: 12px 28px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
         .nav-tabs .nav-link { color: #64748b; font-size: 0.8rem; }
         .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
@@ -165,6 +166,7 @@
             </div>
 
             <div class="col-lg-4" id="toolsCol">
+                
                 <div class="app-card border-top border-4 border-primary">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-wrench text-primary me-2"></i>Turn Predictor</h6>
                     {% if last_run and (last_run.wt_per_turn|float != 0) %}
@@ -187,18 +189,29 @@
                         <p class="small text-muted fst-italic">Record weights + turns to enable.</p>
                     {% endif %}
                 </div>
+
                 <div class="app-card border-top border-4 border-danger">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-gas-pump text-danger me-2"></i>Fuel Predictor</h6>
-                    {% if last_run and (last_run.fuel_sensitivity|float != 0) %}
-                        <div class="input-group input-group-sm mb-2">
-                            <input type="number" id="fuelTargetInput" class="form-control" placeholder="Add Fuel...">
-                            <select id="fuelTargetUnit" class="form-select bg-light" style="max-width: 70px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="number" id="fuelTargetInput" class="form-control" placeholder="Add Fuel...">
+                        <select id="fuelTargetUnit" class="form-select bg-light" style="max-width: 70px;"><option value="gal">Gal</option><option value="lbs">Lbs</option></select>
+                    </div>
+                    
+                    <div id="fuelResults" class="d-none mt-3">
+                        <div class="row g-2 text-center mb-2">
+                            <div class="col-6"><div class="pred-box">LF <span id="pLF"></span></div></div>
+                            <div class="col-6"><div class="pred-box">RF <span id="pRF"></span></div></div>
+                            <div class="col-6"><div class="pred-box">LR <span id="pLR"></span></div></div>
+                            <div class="col-6"><div class="pred-box">RR <span id="pRR"></span></div></div>
                         </div>
-                        <div class="d-flex justify-content-between px-2"><small class="fw-bold text-muted">REAR %:</small><span id="fuelRec" class="fw-bold">--</span></div>
-                    {% else %}
-                        <p class="small text-muted fst-italic">Record fuel add (no turns) to learn.</p>
-                    {% endif %}
+                        <div class="text-center p-2 bg-light rounded border">
+                            <small class="text-muted fw-bold text-uppercase">New Cross Weight</small>
+                            <div id="pCross" class="h4 fw-bold text-danger mb-0">--%</div>
+                        </div>
+                    </div>
+                    <div id="fuelHint" class="small text-muted fst-italic mt-2">Enter fuel to see new weights (Assumes 50/50 rear add).</div>
                 </div>
+
                 <div class="app-card border-top border-4 border-dark">
                     <h6 class="fw-bold mb-3"><i class="fa-solid fa-calculator text-dark me-2"></i>Reverse Calc</h6>
                     <div class="row g-2 mb-2">
@@ -281,6 +294,8 @@
             updateCoG(lP, rP);
         }
         calcCrossPred(); calcCornerPred();
+        // Force update of fuel pred if value exists
+        if(document.getElementById('fuelTargetInput').value) calcFuel();
     }
     wIds.forEach(id => document.getElementById(id).addEventListener('input', updateLive));
 
@@ -314,7 +329,7 @@
         if(!target || sensRate === 0 || curW.t===0) { document.getElementById('recCross').innerText = "--"; return; }
         const cur = ((curW.rf + curW.lr) / curW.t) * 100;
         const t = (target - cur) / sensRate;
-        document.getElementById('recCross').innerText = `${t>0?"Tighten":"Loosen"} RF/LR ${Math.abs(t).toFixed(2)} turns`;
+        document.getElementById('recCross').innerText = `${t>0?"Raise":"Lower"} RF/LR ${Math.abs(t).toFixed(2)} turns`;
     }
     const tc = document.getElementById('targetCross'); if(tc) tc.addEventListener('input', calcCrossPred);
 
@@ -323,23 +338,53 @@
         if(!target || curW.t===0 || sensRate===0) { document.getElementById('recCorner').innerText = "--"; return; }
         const lbsPerTurn = curW.t * (Math.abs(sensRate)/100);
         const t = (target - curW[c]) / lbsPerTurn;
-        document.getElementById('recCorner').innerText = `${t>0?"Tighten":"Loosen"} ${c.toUpperCase()} ${Math.abs(t).toFixed(2)} turns`;
+        document.getElementById('recCorner').innerText = `${t>0?"Raise":"Lower"} ${c.toUpperCase()} ${Math.abs(t).toFixed(2)} turns`;
     }
     const tw=document.getElementById('targetWeight'), ts=document.getElementById('targetCornerSelect'); if(tw){ tw.addEventListener('input', calcCornerPred); ts.addEventListener('change', calcCornerPred); }
 
+    // UPDATED FUEL PREDICTOR
     const fuelIn = document.getElementById('fuelTargetInput'), fuelUnit = document.getElementById('fuelTargetUnit');
     if(fuelIn) {
-        const fRate = parseFloat("{{ last_run.fuel_sensitivity if last_run and last_run.fuel_sensitivity else 0 }}") || 0;
         function calcFuel() {
-            let val = parseFloat(fuelIn.value) || 0;
-            if(fuelUnit.value === 'gal') val = val * 6.2;
-            const shift = (val * fRate).toFixed(2);
-            document.getElementById('fuelRec').innerText = (shift>0?"+":"") + shift + "%";
+            const val = parseFloat(fuelIn.value);
+            if(isNaN(val) || val === 0 || curW.t === 0) {
+                document.getElementById('fuelResults').classList.add('d-none');
+                document.getElementById('fuelHint').classList.remove('d-none');
+                return;
+            }
+            
+            // Calculate Fuel Weight
+            let fuelWt = val;
+            if(fuelUnit.value === 'gal') fuelWt = val * 6.2;
+            
+            // Assume 50/50 split to rear
+            const halfFuel = fuelWt / 2;
+            
+            // Calculate New Weights
+            const nLF = curW.lf;
+            const nRF = curW.rf;
+            const nLR = curW.lr + halfFuel;
+            const nRR = curW.rr + halfFuel;
+            const nTotal = curW.t + fuelWt;
+            
+            // Calculate New Cross
+            const nCross = ((nRF + nLR) / nTotal) * 100;
+            
+            // Display
+            document.getElementById('pLF').innerText = nLF.toFixed(1);
+            document.getElementById('pRF').innerText = nRF.toFixed(1);
+            document.getElementById('pLR').innerText = nLR.toFixed(1);
+            document.getElementById('pRR').innerText = nRR.toFixed(1);
+            document.getElementById('pCross').innerText = nCross.toFixed(2) + '%';
+            
+            document.getElementById('fuelResults').classList.remove('d-none');
+            document.getElementById('fuelHint').classList.add('d-none');
         }
-        fuelIn.addEventListener('input', calcFuel); fuelUnit.addEventListener('change', calcFuel);
+        fuelIn.addEventListener('input', calcFuel); 
+        fuelUnit.addEventListener('change', calcFuel);
     }
 
-    // 4. Modal
+    // 4. Modal Helpers
     function toggleCompare() { document.getElementById('compareBtn').style.display = (document.querySelectorAll('.compare-check:checked').length===2)?'block':'none'; }
     function showPopUp(el) {
         const r=JSON.parse(el.getAttribute('data-run'));

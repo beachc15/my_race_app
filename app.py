@@ -3,17 +3,22 @@ import csv
 import sqlite3
 import io
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, redirect, url_for, g, make_response
+from flask import Flask, render_template, request, redirect, url_for, g, make_response, session
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24) # Required for session management
 
 # --- CONFIGURATION ---
 DB_NAME = "race_data.db"
-# Backup path
 DOC_PATH = Path.home() / "Documents" / "race_car_weights.csv"
+PIN_FILE = Path("pin.txt")
 FUEL_DENSITY = 6.2 
+
+# --- SECURITY CONFIG ---
+MAX_ATTEMPTS = 3
+LOCKOUT_TIME = 30 # Minutes
 
 # --- SCHEMA ---
 FIELDNAMES = [
@@ -26,6 +31,16 @@ FIELDNAMES = [
     "wt_per_turn", "fuel_sensitivity", 
     "is_baseline"
 ]
+
+# --- PIN MANAGEMENT ---
+def get_pin():
+    """Reads the PIN from a local file or creates default."""
+    if not PIN_FILE.exists():
+        with open(PIN_FILE, 'w') as f: f.write("0000")
+        print("⚠️  WARNING: Created 'pin.txt' with default PIN: 0000")
+        return "0000"
+    with open(PIN_FILE, 'r') as f:
+        return f.read().strip()
 
 # --- DATABASE CONNECTION ---
 def get_db():
@@ -56,7 +71,6 @@ def import_csv_to_sqlite():
         cur = db.cursor()
         cur.execute("SELECT count(*) FROM setups")
         if cur.fetchone()[0] > 0: return 
-        
         try:
             with open(DOC_PATH, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
@@ -85,7 +99,57 @@ def write_backup_csv(data_dict):
             writer.writerow(data_dict)
     except: pass
 
-# --- ROUTES ---
+# --- LOGIN & SECURITY ROUTES ---
+
+@app.before_request
+def require_login():
+    """Protect all routes except login and static resources."""
+    if request.endpoint == 'login' or request.endpoint == 'static':
+        return
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Check Lockout Status
+    lockout_time = session.get('lockout_until')
+    if lockout_time:
+        if datetime.now().timestamp() < lockout_time:
+            remaining = int((lockout_time - datetime.now().timestamp()) / 60) + 1
+            return render_template('login.html', error=f"Too many failed attempts. Try again in {remaining} minutes.")
+        else:
+            # Lockout expired
+            session.pop('lockout_until', None)
+            session['attempts'] = 0
+
+    if request.method == 'POST':
+        input_pin = request.form.get('pin')
+        correct_pin = get_pin()
+
+        if input_pin == correct_pin:
+            session['logged_in'] = True
+            session['attempts'] = 0
+            return redirect(url_for('index'))
+        else:
+            # Handle Failure
+            attempts = session.get('attempts', 0) + 1
+            session['attempts'] = attempts
+            
+            if attempts >= MAX_ATTEMPTS:
+                lockout_end = (datetime.now() + timedelta(minutes=LOCKOUT_TIME)).timestamp()
+                session['lockout_until'] = lockout_end
+                return render_template('login.html', error=f"LOCKED OUT: Too many attempts. Wait {LOCKOUT_TIME} minutes.")
+            
+            return render_template('login.html', error=f"Incorrect PIN. Attempts remaining: {MAX_ATTEMPTS - attempts}")
+
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+# --- MAIN APP ROUTES ---
 
 @app.route('/')
 def index():
@@ -96,24 +160,20 @@ def index():
     
     last_run = history[-1] if history else None
     baseline_run = next((r for r in reversed(history) if r['is_baseline'] == 'Yes'), None)
-    
     next_num = int(last_run['scale_num']) + 1 if last_run else 1
             
     return render_template('index.html', history=history, last_run=last_run, baseline_run=baseline_run, next_num=next_num, selected_car=selected_car)
 
 @app.route('/download/<car_num>')
 def download_csv(car_num):
-    """Generates a CSV file for the selected car and serves it as a download."""
     db = get_db()
     cur = db.execute("SELECT * FROM setups WHERE car_num = ? ORDER BY date ASC", (car_num,))
     rows = cur.fetchall()
 
-    # Use StringIO to build CSV in memory (saves SD card writes)
     si = io.StringIO()
     writer = csv.DictWriter(si, fieldnames=FIELDNAMES)
     writer.writeheader()
-    for row in rows:
-        writer.writerow(dict(row))
+    for row in rows: writer.writerow(dict(row))
 
     output = make_response(si.getvalue())
     output.headers["Content-Disposition"] = f"attachment; filename=Car_{car_num}_Data.csv"

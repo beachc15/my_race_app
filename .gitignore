@@ -1,2 +1,4 @@
-.venv/
+venv/
 .vscode/
+race_data.db
+pin.txt
